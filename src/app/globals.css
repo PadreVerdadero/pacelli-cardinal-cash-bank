@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8fb;
+  --foreground: #0f1b2d;
+  --navy: #001f3f;
+  --navy-deep: #00152b;
+  --cardinal-red: #c8102e;
+  --cardinal-red-hot: #a50d25;
+  --cardinal-red-soft: #ffb3bf;
+  --ink-muted: #5b667a;
+  --paper: #ffffff;
+  --stripe: rgba(0, 31, 63, 0.06);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(200, 16, 46, 0.12), transparent 34%),
+    radial-gradient(circle at top right, rgba(0, 31, 63, 0.14), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, var(--background) 48%, #eef1f7 100%);
+  color: var(--foreground);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+  min-height: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.9em;
+}
