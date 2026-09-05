@@ -5,10 +5,10 @@ import {
   updateStoreItem,
 } from "@/app/actions/catalog";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
-import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { canManageStore } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +28,8 @@ async function deleteStoreItemAction(formData: FormData) {
 }
 
 export default async function CatalogPage() {
-  const session = await auth();
-  if (!session?.user || !canManageStore(session.user.role)) {
+  const user = await getAuthUser();
+  if (!user || !canManageStore(user.role)) {
     redirect("/teacher");
   }
 

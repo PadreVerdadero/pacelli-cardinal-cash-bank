@@ -5,10 +5,10 @@ import {
   updateActivity,
 } from "@/app/actions/catalog";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
-import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { canManageActivities } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +28,8 @@ async function deleteActivityAction(formData: FormData) {
 }
 
 export default async function ActivitiesPage() {
-  const session = await auth();
-  if (!session?.user || !canManageActivities(session.user.role)) {
+  const user = await getAuthUser();
+  if (!user || !canManageActivities(user.role)) {
     redirect("/teacher");
   }
 

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PrintButton } from "@/components/PrintButton";
-import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { canViewAllStudents } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,8 @@ type Props = {
 };
 
 export default async function StudentTransactionsPrintPage({ params }: Props) {
-  const session = await auth();
-  if (!session?.user || !canViewAllStudents(session.user.role)) {
+  const user = await getAuthUser();
+  if (!user || !canViewAllStudents(user.role)) {
     redirect("/login");
   }
 

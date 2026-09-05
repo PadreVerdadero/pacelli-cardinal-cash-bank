@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "@/components/ChangePasswordForm";
-import { auth } from "@/lib/auth";
 import { roleLabel } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getAuthUser();
+  if (!user) {
     redirect("/login?callbackUrl=/account");
   }
 
@@ -17,10 +17,11 @@ export default async function AccountPage() {
         My account
       </p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl text-[var(--navy)]">
-        {session.user.name}
+        {user.name}
       </h1>
       <p className="mt-2 text-sm text-[var(--ink-muted)]">
-        Role: {roleLabel(session.user.role)}
+        Role: {roleLabel(user.realRole)}
+        {user.viewingAs ? ` · Previewing as ${roleLabel(user.role)}` : ""}
       </p>
 
       <h2 className="mt-8 font-[family-name:var(--font-display)] text-xl text-[var(--navy)]">

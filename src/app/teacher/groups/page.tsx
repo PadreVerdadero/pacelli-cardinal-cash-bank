@@ -7,9 +7,9 @@ import {
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { GroupPayoutForm } from "@/components/GroupPayoutForm";
 import { StudentChecklist } from "@/components/StudentChecklist";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageGroups } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +29,8 @@ async function deleteGroupAction(formData: FormData) {
 }
 
 export default async function GroupsPage() {
-  const session = await auth();
-  if (!session?.user || !canManageGroups(session.user.role)) {
+  const user = await getAuthUser();
+  if (!user || !canManageGroups(user.role)) {
     redirect("/teacher");
   }
 

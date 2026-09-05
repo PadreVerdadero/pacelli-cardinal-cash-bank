@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { QrCardsPrinter } from "@/components/QrCardsPrinter";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/roles";
 import { studentQrDataUrl } from "@/lib/qr";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function QrCardsPrintPage() {
-  const session = await auth();
-  if (!session?.user || !isAdmin(session.user.role)) {
+  const user = await getAuthUser();
+  if (!user || !isAdmin(user.role)) {
     redirect("/teacher");
   }
 

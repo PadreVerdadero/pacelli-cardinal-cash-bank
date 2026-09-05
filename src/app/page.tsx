@@ -1,23 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { StudentSearch } from "@/components/StudentSearch";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canViewAllStudents } from "@/lib/roles";
-import { homePathForRole } from "@/lib/session";
+import { getAuthUser, homePathForRole } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getAuthUser();
+  if (!user) {
     redirect("/login");
   }
 
-  if (session.user.role === "STUDENT") {
-    if (session.user.studentId) {
+  if (user.role === "STUDENT") {
+    if (user.studentId) {
       const student = await prisma.student.findUnique({
-        where: { id: session.user.studentId },
+        where: { id: user.studentId },
         select: { qrToken: true },
       });
       redirect(homePathForRole("STUDENT", student?.qrToken));
@@ -25,7 +24,7 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  if (!canViewAllStudents(session.user.role)) {
+  if (!canViewAllStudents(user.role)) {
     redirect("/login");
   }
 

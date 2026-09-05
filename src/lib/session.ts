@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import {
   canManageAccounts,
   canManageActivities,
@@ -8,13 +9,58 @@ import {
   isStaff,
   type Role,
 } from "@/lib/roles";
+import {
+  readViewAsCookie,
+  resolveEffectiveRole,
+} from "@/lib/view-as";
+
+export type AuthUser = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  /** Effective role (respects Super Admin view-as). */
+  role: Role;
+  /** Actual signed-in role. */
+  realRole: Role;
+  studentId?: string | null;
+  viewingAs: boolean;
+};
+
+export async function getAuthUser(): Promise<AuthUser | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const realRole = session.user.role;
+  const viewAs = realRole === "SUPER_ADMIN" ? await readViewAsCookie() : null;
+  const role = resolveEffectiveRole(realRole, viewAs);
+
+  let studentId = session.user.studentId ?? null;
+  if (role === "STUDENT" && !studentId && realRole === "SUPER_ADMIN") {
+    const preview = await prisma.student.findFirst({
+      where: { active: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true },
+    });
+    studentId = preview?.id ?? null;
+  }
+
+  return {
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+    role,
+    realRole,
+    studentId,
+    viewingAs: Boolean(viewAs),
+  };
+}
 
 export async function requireSession() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getAuthUser();
+  if (!user) {
     throw new Error("Sign in required");
   }
-  return session.user;
+  return user;
 }
 
 export async function requireStaff() {

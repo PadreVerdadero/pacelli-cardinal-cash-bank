@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createAccount, deleteAccount, updateAccount } from "@/app/actions/accounts";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   canDeleteUser,
@@ -11,6 +10,7 @@ import {
   roleLabel,
   type Role,
 } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +30,8 @@ async function deleteAccountAction(formData: FormData) {
 }
 
 export default async function AccountsPage() {
-  const session = await auth();
-  if (!session?.user || !canManageAccounts(session.user.role)) {
+  const actor = await getAuthUser();
+  if (!actor || !canManageAccounts(actor.role)) {
     redirect("/teacher");
   }
 
@@ -49,7 +49,7 @@ export default async function AccountsPage() {
     }),
   ]);
 
-  const roles = creatableRoles(session.user.role);
+  const roles = creatableRoles(actor.role);
 
   return (
     <div className="space-y-8">
@@ -130,14 +130,14 @@ export default async function AccountsPage() {
         </h2>
         <ul className="mt-4 space-y-4">
           {users.map((user) => {
-            const editable = canEditUser(session.user.role, user.role);
+            const editable = canEditUser(actor.role, user.role);
             const deletable = canDeleteUser(
-              session.user.role,
+              actor.role,
               user.role,
               user.id,
-              session.user.id,
+              actor.id,
             );
-            const assignable = creatableRoles(session.user.role).filter((role) =>
+            const assignable = creatableRoles(actor.role).filter((role) =>
               user.role === "SUPER_ADMIN" ? role === "SUPER_ADMIN" : true,
             );
 

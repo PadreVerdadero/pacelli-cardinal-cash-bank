@@ -7,10 +7,10 @@ import {
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { CsvImport } from "@/components/CsvImport";
 import { MassLoginForm } from "@/components/MassLoginForm";
-import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { canManageAccounts } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +30,8 @@ async function deleteStudentAction(formData: FormData) {
 }
 
 export default async function StudentsAdminPage() {
-  const session = await auth();
-  const canEdit = canManageAccounts(session?.user?.role);
+  const user = await getAuthUser();
+  const canEdit = canManageAccounts(user?.role);
 
   const students = await prisma.student.findMany({
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],

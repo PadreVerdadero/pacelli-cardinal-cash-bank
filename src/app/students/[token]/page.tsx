@@ -3,11 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { deleteTransaction } from "@/app/actions/balance";
 import { BalanceAdjuster } from "@/components/BalanceAdjuster";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
-import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { canDeleteTransactions, canTransact, canViewAllStudents } from "@/lib/roles";
 import { studentQrDataUrl } from "@/lib/qr";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +22,13 @@ async function deleteTransactionAction(formData: FormData) {
 
 export default async function StudentPage({ params }: Props) {
   const { token } = await params;
-  const session = await auth();
+  const user = await getAuthUser();
 
-  if (!session?.user) {
+  if (!user) {
     redirect(`/login?callbackUrl=/students/${token}`);
   }
 
-  const canRemoveTx = canDeleteTransactions(session.user.role);
+  const canRemoveTx = canDeleteTransactions(user.role);
 
   const student = await prisma.student.findUnique({
     where: { qrToken: token },
@@ -46,14 +46,14 @@ export default async function StudentPage({ params }: Props) {
   }
 
   const isOwnStudent =
-    session.user.role === "STUDENT" && session.user.studentId === student.id;
-  const staffView = canViewAllStudents(session.user.role);
+    user.role === "STUDENT" && user.studentId === student.id;
+  const staffView = canViewAllStudents(user.role);
 
   if (!staffView && !isOwnStudent) {
     redirect("/");
   }
 
-  const canAdjust = canTransact(session.user.role);
+  const canAdjust = canTransact(user.role);
   const qrDataUrl = staffView ? await studentQrDataUrl(student.qrToken) : null;
 
   const [activities, storeItems] = canAdjust

@@ -1,12 +1,17 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
+import { VIEW_AS_COOKIE, effectiveRoleFromRequest } from "@/lib/view-as";
 
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
-  const role = req.auth?.user?.role;
+  const realRole = req.auth?.user?.role;
+  const role = effectiveRoleFromRequest(
+    realRole,
+    req.cookies.get(VIEW_AS_COOKIE)?.value,
+  );
 
   // Logged-in users should not stay on the login page.
   if (pathname === "/login" && req.auth) {

@@ -1,16 +1,21 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { RoleViewSwitcher } from "@/components/RoleViewSwitcher";
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canTransact, canViewAllStudents, roleLabel } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
+import { VIEW_AS_COOKIE } from "@/lib/view-as";
 
 export async function Header() {
   const session = await auth();
-  const role = session?.user?.role;
+  const user = session?.user ? await getAuthUser() : null;
+  const role = user?.role;
   let studentHref: string | null = null;
 
-  if (role === "STUDENT" && session?.user?.studentId) {
+  if (role === "STUDENT" && user?.studentId) {
     const student = await prisma.student.findUnique({
-      where: { id: session.user.studentId },
+      where: { id: user.studentId },
       select: { qrToken: true },
     });
     if (student) studentHref = `/students/${student.qrToken}`;
@@ -29,7 +34,7 @@ export async function Header() {
         </Link>
 
         <nav className="flex flex-wrap items-center gap-2 text-sm sm:gap-3">
-          {session?.user ? (
+          {user ? (
             <>
               {canViewAllStudents(role) ? (
                 <Link
@@ -66,11 +71,14 @@ export async function Header() {
                 Account
               </Link>
               <span className="hidden text-xs text-white/70 sm:inline">
-                {session.user.name} · {role ? roleLabel(role) : ""}
+                {user.name} · {role ? roleLabel(role) : ""}
+                {user.viewingAs ? " (preview)" : ""}
               </span>
               <form
                 action={async () => {
                   "use server";
+                  const jar = await cookies();
+                  jar.delete(VIEW_AS_COOKIE);
                   await signOut({ redirectTo: "/login" });
                 }}
               >
@@ -93,6 +101,21 @@ export async function Header() {
           )}
         </nav>
       </div>
+      {user?.realRole === "SUPER_ADMIN" ? (
+        <div className="border-t border-white/10 bg-[var(--navy)]/95">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+            <RoleViewSwitcher
+              realRole={user.realRole}
+              effectiveRole={user.role}
+            />
+            {user.viewingAs ? (
+              <p className="text-xs text-[var(--cardinal-red-soft)]">
+                Previewing {roleLabel(user.role)} menus and permissions
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { deleteTransaction } from "@/app/actions/balance";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
-import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import {
@@ -13,6 +12,7 @@ import {
   isAdmin,
   isStaff,
 } from "@/lib/roles";
+import { getAuthUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +22,13 @@ async function deleteTransactionAction(formData: FormData) {
 }
 
 export default async function TeacherHomePage() {
-  const session = await auth();
-  if (!session?.user || !isStaff(session.user.role)) {
+  const user = await getAuthUser();
+  if (!user || !isStaff(user.role)) {
     redirect("/login");
   }
 
-  const admin = isAdmin(session.user.role);
-  const canRemoveTx = canDeleteTransactions(session.user.role);
+  const admin = isAdmin(user.role);
+  const canRemoveTx = canDeleteTransactions(user.role);
 
   const [studentCount, totalBalance, recent] = await Promise.all([
     prisma.student.count({ where: { active: true } }),
@@ -75,19 +75,19 @@ export default async function TeacherHomePage() {
       href: "/teacher/activities",
       title: "Activities",
       body: "Set reward values for specific activities.",
-      show: canManageActivities(session.user.role),
+      show: canManageActivities(user.role),
     },
     {
       href: "/teacher/catalog",
       title: "Store catalog",
       body: "Add store items and prices.",
-      show: canManageStore(session.user.role),
+      show: canManageStore(user.role),
     },
     {
       href: "/teacher/accounts",
       title: "Accounts",
       body: "Create and manage Admin, Teacher, and Student logins.",
-      show: canManageAccounts(session.user.role),
+      show: canManageAccounts(user.role),
     },
     {
       href: "/teacher/print/qr-cards",
@@ -103,7 +103,7 @@ export default async function TeacherHomePage() {
         Staff desk
       </p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl text-[var(--navy)]">
-        Welcome, {session.user.name?.split(" ")[0] ?? "Staff"}
+        Welcome, {user.name?.split(" ")[0] ?? "Staff"}
       </h1>
       <p className="mt-2 text-[var(--ink-muted)]">
         {admin
