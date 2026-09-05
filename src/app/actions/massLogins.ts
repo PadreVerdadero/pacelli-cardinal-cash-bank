@@ -142,9 +142,9 @@ export async function importStudentLoginsCsv(csvText: string) {
       problems.push(`Row ${rowNumber}: username must be at least 3 characters.`);
       continue;
     }
-    if (password.length < 6) {
+    if (!password) {
       skipped += 1;
-      problems.push(`Row ${rowNumber}: password must be at least 6 characters.`);
+      problems.push(`Row ${rowNumber}: password is required.`);
       continue;
     }
 
