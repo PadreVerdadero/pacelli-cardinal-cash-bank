@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { dollarsToCents } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
-import { requireStaff } from "@/lib/session";
+import { requireAccountManager, requireStaff } from "@/lib/session";
 
 const studentSchema = z.object({
   firstName: z.string().trim().min(1),
@@ -12,6 +12,16 @@ const studentSchema = z.object({
   studentNumber: z.string().trim().optional().or(z.literal("")),
   grade: z.string().trim().optional().or(z.literal("")),
   initialBalance: z.string().optional().or(z.literal("")),
+});
+
+const updateSchema = z.object({
+  id: z.string().min(1),
+  firstName: z.string().trim().min(1),
+  lastName: z.string().trim().min(1),
+  studentNumber: z.string().trim().optional().or(z.literal("")),
+  grade: z.string().trim().optional().or(z.literal("")),
+  balance: z.string().optional().or(z.literal("")),
+  active: z.enum(["true", "false"]),
 });
 
 export async function createStudent(formData: FormData) {
@@ -54,6 +64,70 @@ export async function createStudent(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/teacher/students");
+  return { success: true };
+}
+
+export async function updateStudent(formData: FormData) {
+  await requireAccountManager();
+
+  const parsed = updateSchema.safeParse({
+    id: formData.get("id"),
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
+    studentNumber: formData.get("studentNumber"),
+    grade: formData.get("grade"),
+    balance: formData.get("balance"),
+    active: formData.get("active") ?? "true",
+  });
+
+  if (!parsed.success) {
+    return { error: "First name and last name are required." };
+  }
+
+  let balanceCents: number | undefined;
+  if (parsed.data.balance !== undefined && parsed.data.balance !== "") {
+    try {
+      balanceCents = dollarsToCents(parsed.data.balance);
+    } catch {
+      return { error: "Balance must be a valid number." };
+    }
+    if (balanceCents < 0) {
+      return { error: "Balance cannot be negative." };
+    }
+  }
+
+  try {
+    await prisma.student.update({
+      where: { id: parsed.data.id },
+      data: {
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        studentNumber: parsed.data.studentNumber || null,
+        grade: parsed.data.grade || null,
+        active: parsed.data.active === "true",
+        ...(balanceCents !== undefined ? { balanceCents } : {}),
+      },
+    });
+  } catch {
+    return { error: "Could not update student. Student number may already exist." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/teacher/students");
+  return { success: true };
+}
+
+export async function deleteStudent(formData: FormData) {
+  await requireAccountManager();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Missing student." };
+
+  // Linked login accounts are unlinked (studentId set null) via relation onDelete: SetNull
+  await prisma.student.delete({ where: { id } });
+
+  revalidatePath("/");
+  revalidatePath("/teacher/students");
+  revalidatePath("/teacher/accounts");
   return { success: true };
 }
 

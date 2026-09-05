@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { createActivity, setActivityActive } from "@/app/actions/catalog";
+import {
+  createActivity,
+  deleteActivity,
+  updateActivity,
+} from "@/app/actions/catalog";
 import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
@@ -12,9 +16,14 @@ async function createActivityAction(formData: FormData) {
   await createActivity(formData);
 }
 
-async function setActivityActiveAction(formData: FormData) {
+async function updateActivityAction(formData: FormData) {
   "use server";
-  await setActivityActive(formData);
+  await updateActivity(formData);
+}
+
+async function deleteActivityAction(formData: FormData) {
+  "use server";
+  await deleteActivity(formData);
 }
 
 export default async function ActivitiesPage() {
@@ -34,7 +43,7 @@ export default async function ActivitiesPage() {
           Activities
         </h1>
         <p className="mt-2 text-[var(--ink-muted)]">
-          Assign Cardinal Cash values to activities. Teachers can apply these on a student page.
+          Add, edit, or delete activity rewards. Teachers can apply these on a student page.
         </p>
 
         <form action={createActivityAction} className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -60,22 +69,56 @@ export default async function ActivitiesPage() {
         <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--navy)]">
           Activity list ({activities.length})
         </h2>
-        <ul className="mt-4 divide-y divide-[var(--navy)]/10">
+        <ul className="mt-4 space-y-4">
           {activities.map((activity) => (
-            <li key={activity.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-              <div>
-                <p className="font-medium text-[var(--navy)]">{activity.name}</p>
-                <p className="text-sm text-[var(--ink-muted)]">
-                  {formatCash(activity.valueCents)}
-                  {activity.description ? ` · ${activity.description}` : ""}
-                  {!activity.active ? " · inactive" : ""}
-                </p>
-              </div>
-              <form action={setActivityActiveAction}>
+            <li key={activity.id} className="rounded-xl border border-[var(--navy)]/10 p-4">
+              <p className="text-sm text-[var(--ink-muted)]">
+                Current: {formatCash(activity.valueCents)}
+                {!activity.active ? " · inactive" : ""}
+              </p>
+              <form action={updateActivityAction} className="mt-3 grid gap-2 sm:grid-cols-2">
                 <input type="hidden" name="id" value={activity.id} />
-                <input type="hidden" name="active" value={activity.active ? "false" : "true"} />
-                <button type="submit" className="rounded-md border border-[var(--navy)] px-3 py-2 text-sm">
-                  {activity.active ? "Deactivate" : "Activate"}
+                <input
+                  name="name"
+                  defaultValue={activity.name}
+                  required
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm sm:col-span-2"
+                />
+                <input
+                  name="description"
+                  defaultValue={activity.description ?? ""}
+                  placeholder="Description"
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm sm:col-span-2"
+                />
+                <input
+                  name="value"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  defaultValue={(activity.valueCents / 100).toFixed(2)}
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm"
+                />
+                <select
+                  name="active"
+                  defaultValue={activity.active ? "true" : "false"}
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm"
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+                <button
+                  type="submit"
+                  className="rounded-md border border-[var(--navy)] px-3 py-2 text-sm font-medium text-[var(--navy)] sm:w-fit"
+                >
+                  Save changes
+                </button>
+                <button
+                  formAction={deleteActivityAction}
+                  type="submit"
+                  className="rounded-md bg-[var(--cardinal-red)] px-3 py-2 text-sm font-medium text-white sm:w-fit"
+                >
+                  Delete activity
                 </button>
               </form>
             </li>

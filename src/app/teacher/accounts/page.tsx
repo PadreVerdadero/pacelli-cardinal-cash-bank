@@ -164,11 +164,28 @@ export default async function AccountsPage() {
                 </div>
 
                 {editable ? (
-                  <form action={updateAccountAction} className="mt-3 grid gap-2 sm:grid-cols-4">
+                  <form action={updateAccountAction} className="mt-3 grid gap-2 sm:grid-cols-2">
                     <input type="hidden" name="id" value={user.id} />
                     <input
                       name="name"
                       defaultValue={user.name}
+                      required
+                      placeholder="Display name"
+                      className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm"
+                    />
+                    <input
+                      name="username"
+                      defaultValue={user.username}
+                      required
+                      minLength={3}
+                      placeholder="Username"
+                      className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm"
+                    />
+                    <input
+                      name="email"
+                      type="email"
+                      defaultValue={user.email ?? ""}
+                      placeholder="Email (optional)"
                       className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm"
                     />
                     <select
@@ -204,7 +221,7 @@ export default async function AccountsPage() {
                     />
                     <button
                       type="submit"
-                      className="rounded-md border border-[var(--navy)] px-3 py-2 text-sm font-medium text-[var(--navy)] sm:col-span-3 sm:w-fit"
+                      className="rounded-md border border-[var(--navy)] px-3 py-2 text-sm font-medium text-[var(--navy)] sm:w-fit"
                     >
                       Save changes
                     </button>
@@ -214,7 +231,7 @@ export default async function AccountsPage() {
                         type="submit"
                         className="rounded-md bg-[var(--cardinal-red)] px-3 py-2 text-sm font-medium text-white sm:w-fit"
                       >
-                        Delete
+                        Delete login
                       </button>
                     ) : null}
                   </form>

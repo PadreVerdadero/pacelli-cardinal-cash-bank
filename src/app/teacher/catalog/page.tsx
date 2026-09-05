@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { createStoreItem, setStoreItemActive } from "@/app/actions/catalog";
+import {
+  createStoreItem,
+  deleteStoreItem,
+  updateStoreItem,
+} from "@/app/actions/catalog";
 import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
@@ -12,9 +16,14 @@ async function createStoreItemAction(formData: FormData) {
   await createStoreItem(formData);
 }
 
-async function setStoreItemActiveAction(formData: FormData) {
+async function updateStoreItemAction(formData: FormData) {
   "use server";
-  await setStoreItemActive(formData);
+  await updateStoreItem(formData);
+}
+
+async function deleteStoreItemAction(formData: FormData) {
+  "use server";
+  await deleteStoreItem(formData);
 }
 
 export default async function CatalogPage() {
@@ -34,7 +43,7 @@ export default async function CatalogPage() {
           Store catalog
         </h1>
         <p className="mt-2 text-[var(--ink-muted)]">
-          Add school store items and prices. Staff can sell these from a student page or the store.
+          Add, edit, or delete school store items and prices.
         </p>
 
         <form action={createStoreItemAction} className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -60,22 +69,56 @@ export default async function CatalogPage() {
         <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--navy)]">
           Items ({items.length})
         </h2>
-        <ul className="mt-4 divide-y divide-[var(--navy)]/10">
+        <ul className="mt-4 space-y-4">
           {items.map((item) => (
-            <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-              <div>
-                <p className="font-medium text-[var(--navy)]">{item.name}</p>
-                <p className="text-sm text-[var(--ink-muted)]">
-                  {formatCash(item.priceCents)}
-                  {item.description ? ` · ${item.description}` : ""}
-                  {!item.active ? " · inactive" : ""}
-                </p>
-              </div>
-              <form action={setStoreItemActiveAction}>
+            <li key={item.id} className="rounded-xl border border-[var(--navy)]/10 p-4">
+              <p className="text-sm text-[var(--ink-muted)]">
+                Current: {formatCash(item.priceCents)}
+                {!item.active ? " · inactive" : ""}
+              </p>
+              <form action={updateStoreItemAction} className="mt-3 grid gap-2 sm:grid-cols-2">
                 <input type="hidden" name="id" value={item.id} />
-                <input type="hidden" name="active" value={item.active ? "false" : "true"} />
-                <button type="submit" className="rounded-md border border-[var(--navy)] px-3 py-2 text-sm">
-                  {item.active ? "Deactivate" : "Activate"}
+                <input
+                  name="name"
+                  defaultValue={item.name}
+                  required
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm sm:col-span-2"
+                />
+                <input
+                  name="description"
+                  defaultValue={item.description ?? ""}
+                  placeholder="Description"
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm sm:col-span-2"
+                />
+                <input
+                  name="price"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  defaultValue={(item.priceCents / 100).toFixed(2)}
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm"
+                />
+                <select
+                  name="active"
+                  defaultValue={item.active ? "true" : "false"}
+                  className="rounded-md border border-[var(--navy)]/20 px-3 py-2 text-sm"
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+                <button
+                  type="submit"
+                  className="rounded-md border border-[var(--navy)] px-3 py-2 text-sm font-medium text-[var(--navy)] sm:w-fit"
+                >
+                  Save changes
+                </button>
+                <button
+                  formAction={deleteStoreItemAction}
+                  type="submit"
+                  className="rounded-md bg-[var(--cardinal-red)] px-3 py-2 text-sm font-medium text-white sm:w-fit"
+                >
+                  Delete item
                 </button>
               </form>
             </li>

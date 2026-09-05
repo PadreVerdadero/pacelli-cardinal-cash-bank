@@ -99,12 +99,14 @@ export async function updateAccount(formData: FormData) {
   const actor = await requireAccountManager();
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  const emailRaw = String(formData.get("email") ?? "").trim();
   const role = String(formData.get("role") ?? "") as Role;
   const active = String(formData.get("active") ?? "true") === "true";
   const password = String(formData.get("password") ?? "");
 
-  if (!id || !name) {
-    return { error: "Missing account details." };
+  if (!id || !name || username.length < 3) {
+    return { error: "Name and username (3+ characters) are required." };
   }
 
   const target = await prisma.user.findUnique({ where: { id } });
@@ -129,6 +131,8 @@ export async function updateAccount(formData: FormData) {
       where: { id },
       data: {
         name,
+        username,
+        email: emailRaw ? emailRaw.toLowerCase() : null,
         role: target.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : role,
         active: target.role === "SUPER_ADMIN" ? true : active,
         ...(password.length >= 6
@@ -137,7 +141,7 @@ export async function updateAccount(formData: FormData) {
       },
     });
   } catch {
-    return { error: "Could not update account." };
+    return { error: "Could not update account. Username may already be taken." };
   }
 
   revalidatePath("/teacher/accounts");
