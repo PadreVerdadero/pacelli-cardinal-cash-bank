@@ -6,6 +6,7 @@ import {
 } from "@/app/actions/students";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { CsvImport } from "@/components/CsvImport";
+import { MassLoginCsvImport } from "@/components/MassLoginCsvImport";
 import { MassLoginForm } from "@/components/MassLoginForm";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
@@ -92,7 +93,12 @@ export default async function StudentsAdminPage() {
         </form>
 
         <CsvImport />
-        {canEdit ? <MassLoginForm /> : null}
+        {canEdit ? (
+          <>
+            <MassLoginForm />
+            <MassLoginCsvImport />
+          </>
+        ) : null}
       </section>
 
       <section className="rounded-2xl bg-[var(--paper)] p-6 shadow-[0_10px_40px_rgba(0,31,63,0.06)] sm:p-8">
