@@ -1,4 +1,4 @@
-studentNumber,username,password
-2001,mfoster2001,cardinal123
-2002,egarcia2002,cardinal123
-2003,shayes2003,cardinal123
+firstName,lastName,username,password
+Maya,Foster,mfoster,cardinal123
+Ethan,Garcia,egarcia,cardinal123
+Sophia,Hayes,shayes,cardinal123

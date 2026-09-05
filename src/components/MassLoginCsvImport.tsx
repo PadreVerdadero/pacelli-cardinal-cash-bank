@@ -49,19 +49,18 @@ export function MassLoginCsvImport() {
       </h2>
       <p className="mt-1 text-sm text-[var(--ink-muted)]">
         Set usernames and passwords for existing students. Required columns:{" "}
-        <code>username,password</code>, plus <code>studentNumber</code> (preferred)
-        or <code>firstName,lastName</code>. Existing logins are updated; missing
-        logins are created.
+        <code>firstName,lastName,username,password</code>. Names are matched to
+        students already in the roster (case does not matter). If two students
+        share the same name, add a <code>studentNumber</code> column instead.
+        Existing logins are updated; missing logins are created.
       </p>
       <p className="mt-2 text-xs text-[var(--ink-muted)]">
-        Example:{" "}
-        <code>studentNumber,username,password</code> or{" "}
         <a
           href="/sample-student-logins.csv"
           className="underline underline-offset-2"
           download
         >
-          download sample CSV
+          Download sample CSV
         </a>
       </p>
       <input
