@@ -39,6 +39,14 @@ export function canManageAccounts(role?: string | null): boolean {
   return role === "SUPER_ADMIN" || role === "ADMIN";
 }
 
+export function isAdmin(role?: string | null): boolean {
+  return role === "SUPER_ADMIN" || role === "ADMIN";
+}
+
+export function canManageGroups(role?: string | null): boolean {
+  return isStaff(role);
+}
+
 /** Roles the actor is allowed to create or assign. */
 export function creatableRoles(actorRole?: string | null): Role[] {
   if (actorRole === "SUPER_ADMIN") {

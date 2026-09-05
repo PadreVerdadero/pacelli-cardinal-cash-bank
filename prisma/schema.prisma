@@ -29,23 +29,46 @@ model User {
   transactions Transaction[]
   storeItems   StoreItem[]
   activities   Activity[]
+  groups       StudentGroup[]
 }
 
 model Student {
-  id            String        @id @default(cuid())
+  id            String               @id @default(cuid())
   firstName     String
   lastName      String
-  studentNumber String?       @unique
+  studentNumber String?              @unique
   grade         String?
-  qrToken       String        @unique @default(cuid())
-  balanceCents  Int           @default(0)
-  active        Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  qrToken       String               @unique @default(cuid())
+  balanceCents  Int                  @default(0)
+  active        Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
   user          User?
   transactions  Transaction[]
+  groupMembers  StudentGroupMember[]
 
   @@index([lastName, firstName])
+}
+
+model StudentGroup {
+  id          String               @id @default(cuid())
+  name        String
+  description String?
+  createdById String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  members     StudentGroupMember[]
+}
+
+model StudentGroupMember {
+  groupId   String
+  studentId String
+  group     StudentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student   Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, studentId])
+  @@index([studentId])
 }
 
 model Transaction {

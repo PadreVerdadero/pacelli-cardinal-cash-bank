@@ -97,6 +97,18 @@ export default async function StudentPage({ params }: Props) {
           </p>
         )}
 
+        {staffView ? (
+          <p className="mt-4">
+            <Link
+              href={`/teacher/print/students/${student.qrToken}`}
+              prefetch={false}
+              className="text-sm font-medium text-[var(--cardinal-red)] underline"
+            >
+              Print / save transactions as PDF
+            </Link>
+          </p>
+        ) : null}
+
         <section className="mt-8">
           <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--navy)]">
             Recent activity

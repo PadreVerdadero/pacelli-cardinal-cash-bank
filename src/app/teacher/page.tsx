@@ -7,6 +7,7 @@ import {
   canManageAccounts,
   canManageActivities,
   canManageStore,
+  isAdmin,
   isStaff,
 } from "@/lib/roles";
 
@@ -17,6 +18,8 @@ export default async function TeacherHomePage() {
   if (!session?.user || !isStaff(session.user.role)) {
     redirect("/login");
   }
+
+  const admin = isAdmin(session.user.role);
 
   const [studentCount, totalBalance, recent] = await Promise.all([
     prisma.student.count({ where: { active: true } }),
@@ -54,6 +57,12 @@ export default async function TeacherHomePage() {
       show: true,
     },
     {
+      href: "/teacher/groups",
+      title: "Groups",
+      body: "Check students into a group and pay them all at once.",
+      show: true,
+    },
+    {
       href: "/teacher/activities",
       title: "Activities",
       body: "Set reward values for specific activities.",
@@ -71,6 +80,12 @@ export default async function TeacherHomePage() {
       body: "Create and manage Admin, Teacher, and Student logins.",
       show: canManageAccounts(session.user.role),
     },
+    {
+      href: "/teacher/print/qr-cards",
+      title: "Print QR cards",
+      body: "PDF-ready page of every student with their QR code.",
+      show: admin,
+    },
   ].filter((link) => link.show);
 
   return (
@@ -82,7 +97,9 @@ export default async function TeacherHomePage() {
         Welcome, {session.user.name?.split(" ")[0] ?? "Staff"}
       </h1>
       <p className="mt-2 text-[var(--ink-muted)]">
-        Manage Cardinal Cash for Pacelli Catholic Schools.
+        {admin
+          ? "Admin tools include accounts, catalog, activities, groups, and QR print sheets."
+          : "Teacher tools: scan QR, students, school store, and groups."}
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -105,6 +122,7 @@ export default async function TeacherHomePage() {
           <Link
             key={link.href}
             href={link.href}
+            prefetch={false}
             className="rounded-2xl bg-[var(--paper)] p-6 shadow-[0_10px_40px_rgba(0,31,63,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_44px_rgba(0,31,63,0.1)]"
           >
             <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--navy)]">
@@ -125,6 +143,7 @@ export default async function TeacherHomePage() {
               <div>
                 <Link
                   href={`/students/${tx.student.qrToken}`}
+                  prefetch={false}
                   className="font-medium text-[var(--navy)] underline-offset-2 hover:underline"
                 >
                   {tx.student.lastName}, {tx.student.firstName}
