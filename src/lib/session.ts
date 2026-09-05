@@ -12,6 +12,7 @@ import {
 import { canAccessAccountsPage } from "@/lib/settings";
 import {
   readViewAsCookie,
+  readViewAsStudentId,
   resolveEffectiveRole,
 } from "@/lib/view-as";
 
@@ -36,13 +37,23 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   const role = resolveEffectiveRole(realRole, viewAs);
 
   let studentId = session.user.studentId ?? null;
-  if (role === "STUDENT" && !studentId && realRole === "SUPER_ADMIN") {
-    const preview = await prisma.student.findFirst({
-      where: { active: true },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      select: { id: true },
-    });
-    studentId = preview?.id ?? null;
+  if (role === "STUDENT" && realRole === "SUPER_ADMIN") {
+    const previewId = await readViewAsStudentId();
+    if (previewId) {
+      const preview = await prisma.student.findFirst({
+        where: { id: previewId, active: true },
+        select: { id: true },
+      });
+      studentId = preview?.id ?? null;
+    }
+    if (!studentId) {
+      const fallback = await prisma.student.findFirst({
+        where: { active: true },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+        select: { id: true },
+      });
+      studentId = fallback?.id ?? null;
+    }
   }
 
   return {

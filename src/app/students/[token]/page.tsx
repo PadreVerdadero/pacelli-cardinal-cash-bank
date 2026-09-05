@@ -46,7 +46,10 @@ export default async function StudentPage({ params }: Props) {
   }
 
   const isOwnStudent =
-    user.role === "STUDENT" && user.studentId === student.id;
+    user.role === "STUDENT" &&
+    (user.studentId === student.id ||
+      // Super Admin student preview can open any student as "own" account UI.
+      (user.realRole === "SUPER_ADMIN" && user.viewingAs));
   const staffView = canViewAllStudents(user.role);
 
   if (!staffView && !isOwnStudent) {

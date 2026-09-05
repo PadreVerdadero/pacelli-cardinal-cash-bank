@@ -5,7 +5,7 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canTransact, canViewAllStudents, roleLabel } from "@/lib/roles";
 import { getAuthUser } from "@/lib/session";
-import { VIEW_AS_COOKIE } from "@/lib/view-as";
+import { VIEW_AS_COOKIE, VIEW_AS_STUDENT_COOKIE } from "@/lib/view-as";
 
 export async function Header() {
   const session = await auth();
@@ -20,6 +20,20 @@ export async function Header() {
     });
     if (student) studentHref = `/students/${student.qrToken}`;
   }
+
+  const previewStudents =
+    user?.realRole === "SUPER_ADMIN" && user.role === "STUDENT"
+      ? await prisma.student.findMany({
+          where: { active: true },
+          orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentNumber: true,
+          },
+        })
+      : [];
 
   return (
     <header className="border-b border-white/15 bg-[var(--navy)] text-white">
@@ -79,6 +93,7 @@ export async function Header() {
                   "use server";
                   const jar = await cookies();
                   jar.delete(VIEW_AS_COOKIE);
+                  jar.delete(VIEW_AS_STUDENT_COOKIE);
                   await signOut({ redirectTo: "/login" });
                 }}
               >
@@ -107,6 +122,8 @@ export async function Header() {
             <RoleViewSwitcher
               realRole={user.realRole}
               effectiveRole={user.role}
+              previewStudentId={user.studentId}
+              students={previewStudents}
             />
             {user.viewingAs ? (
               <p className="text-xs text-[var(--cardinal-red-soft)]">
