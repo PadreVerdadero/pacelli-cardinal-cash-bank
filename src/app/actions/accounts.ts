@@ -10,7 +10,11 @@ import {
   creatableRoles,
   type Role,
 } from "@/lib/roles";
-import { requireAccountManager } from "@/lib/session";
+import {
+  requireAccountManager,
+  requireAccountsAccess,
+} from "@/lib/session";
+import { teacherCanEditStudentLogin } from "@/lib/settings";
 
 const createSchema = z.object({
   name: z.string().trim().min(1),
@@ -26,7 +30,7 @@ const createSchema = z.object({
 });
 
 export async function createAccount(formData: FormData) {
-  const actor = await requireAccountManager();
+  const { user: actor, fullAccess } = await requireAccountsAccess();
 
   const parsed = createSchema.safeParse({
     name: formData.get("name"),
@@ -45,9 +49,27 @@ export async function createAccount(formData: FormData) {
     return { error: "Name, username (3+), password (6+), and role are required." };
   }
 
-  const allowed = creatableRoles(actor.role);
-  if (!allowed.includes(parsed.data.role as Role)) {
-    return { error: "You cannot create that role." };
+  if (!fullAccess) {
+    if (parsed.data.role !== "STUDENT" || !parsed.data.studentId) {
+      return {
+        error: "Teachers can only create logins for their assigned students.",
+      };
+    }
+    if (!(await teacherCanEditStudentLogin(actor.id, parsed.data.studentId))) {
+      return { error: "That student is not assigned to you." };
+    }
+    const existing = await prisma.user.findUnique({
+      where: { studentId: parsed.data.studentId },
+      select: { id: true },
+    });
+    if (existing) {
+      return { error: "That student already has a login." };
+    }
+  } else {
+    const allowed = creatableRoles(actor.role);
+    if (!allowed.includes(parsed.data.role as Role)) {
+      return { error: "You cannot create that role." };
+    }
   }
 
   const username = parsed.data.username.toLowerCase();
@@ -57,6 +79,9 @@ export async function createAccount(formData: FormData) {
 
     if (parsed.data.role === "STUDENT") {
       if (!studentId) {
+        if (!fullAccess) {
+          return { error: "Choose an assigned student for the login." };
+        }
         if (!parsed.data.firstName || !parsed.data.lastName) {
           return {
             error: "Student accounts need a linked student or first/last name.",
@@ -96,7 +121,7 @@ export async function createAccount(formData: FormData) {
 }
 
 export async function updateAccount(formData: FormData) {
-  const actor = await requireAccountManager();
+  const { user: actor, fullAccess } = await requireAccountsAccess();
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
@@ -111,18 +136,28 @@ export async function updateAccount(formData: FormData) {
 
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) return { error: "Account not found." };
-  if (!canEditUser(actor.role, target.role)) {
-    return { error: "You cannot edit that account." };
-  }
-  if (target.role === "SUPER_ADMIN" && actor.role !== "SUPER_ADMIN") {
-    return { error: "Only a Super Admin can edit a Super Admin." };
-  }
-  if (role && role !== target.role) {
-    if (target.role === "SUPER_ADMIN") {
-      return { error: "A Super Admin role cannot be changed." };
+
+  if (!fullAccess) {
+    if (
+      target.role !== "STUDENT" ||
+      !(await teacherCanEditStudentLogin(actor.id, target.studentId))
+    ) {
+      return { error: "You can only edit logins for your assigned students." };
     }
-    if (!creatableRoles(actor.role).includes(role)) {
-      return { error: "You cannot assign that role." };
+  } else {
+    if (!canEditUser(actor.role, target.role)) {
+      return { error: "You cannot edit that account." };
+    }
+    if (target.role === "SUPER_ADMIN" && actor.role !== "SUPER_ADMIN") {
+      return { error: "Only a Super Admin can edit a Super Admin." };
+    }
+    if (role && role !== target.role) {
+      if (target.role === "SUPER_ADMIN") {
+        return { error: "A Super Admin role cannot be changed." };
+      }
+      if (!creatableRoles(actor.role).includes(role)) {
+        return { error: "You cannot assign that role." };
+      }
     }
   }
 
@@ -133,8 +168,16 @@ export async function updateAccount(formData: FormData) {
         name,
         username,
         email: emailRaw ? emailRaw.toLowerCase() : null,
-        role: target.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : role,
-        active: target.role === "SUPER_ADMIN" ? true : active,
+        role: fullAccess
+          ? target.role === "SUPER_ADMIN"
+            ? "SUPER_ADMIN"
+            : role
+          : "STUDENT",
+        active: fullAccess
+          ? target.role === "SUPER_ADMIN"
+            ? true
+            : active
+          : active,
         ...(password.length >= 6
           ? { passwordHash: await hash(password, 10) }
           : {}),

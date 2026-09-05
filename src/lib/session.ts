@@ -9,6 +9,7 @@ import {
   isStaff,
   type Role,
 } from "@/lib/roles";
+import { canAccessAccountsPage } from "@/lib/settings";
 import {
   readViewAsCookie,
   resolveEffectiveRole,
@@ -85,6 +86,18 @@ export async function requireAccountManager() {
     throw new Error("Admins only");
   }
   return user;
+}
+
+/** Full account managers, or teachers allowed to edit assigned student logins. */
+export async function requireAccountsAccess() {
+  const user = await requireSession();
+  if (!(await canAccessAccountsPage(user.role))) {
+    throw new Error("Not allowed to manage accounts");
+  }
+  return {
+    user,
+    fullAccess: canManageAccounts(user.role),
+  };
 }
 
 export async function requireStoreManager() {

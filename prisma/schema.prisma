@@ -15,21 +15,22 @@ enum Role {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  username     String        @unique
-  email        String?       @unique
-  passwordHash String
-  role         Role
-  active       Boolean       @default(true)
-  studentId    String?       @unique
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  student      Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  transactions Transaction[]
-  storeItems   StoreItem[]
-  activities   Activity[]
-  groups       StudentGroup[]
+  id                 String           @id @default(cuid())
+  name               String
+  username           String           @unique
+  email              String?          @unique
+  passwordHash       String
+  role               Role
+  active             Boolean          @default(true)
+  studentId          String?          @unique
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  student            Student?         @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  transactions       Transaction[]
+  storeItems         StoreItem[]
+  activities         Activity[]
+  groups             StudentGroup[]
+  assignedStudents   TeacherStudent[] @relation("TeacherAssignments")
 }
 
 model Student {
@@ -46,8 +47,27 @@ model Student {
   user          User?
   transactions  Transaction[]
   groupMembers  StudentGroupMember[]
+  teachers      TeacherStudent[]
 
   @@index([lastName, firstName])
+}
+
+/** Students a teacher is responsible for (homeroom / class roster). */
+model TeacherStudent {
+  teacherId String
+  studentId String
+  teacher   User    @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([teacherId, studentId])
+  @@index([studentId])
+}
+
+/** Singleton school-wide options (id is always "default"). */
+model SchoolSettings {
+  id                                     String   @id @default("default")
+  teachersCanEditAssignedStudentLogins   Boolean  @default(false)
+  updatedAt                              DateTime @updatedAt
 }
 
 model StudentGroup {

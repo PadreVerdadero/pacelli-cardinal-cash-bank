@@ -13,6 +13,7 @@ import {
   isStaff,
 } from "@/lib/roles";
 import { getAuthUser } from "@/lib/session";
+import { canAccessAccountsPage } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function TeacherHomePage() {
 
   const admin = isAdmin(user.role);
   const canRemoveTx = canDeleteTransactions(user.role);
+  const showAccounts = await canAccessAccountsPage(user.role);
 
   const [studentCount, totalBalance, recent] = await Promise.all([
     prisma.student.count({ where: { active: true } }),
@@ -86,8 +88,10 @@ export default async function TeacherHomePage() {
     {
       href: "/teacher/accounts",
       title: "Accounts",
-      body: "Create and manage Admin, Teacher, and Student logins.",
-      show: canManageAccounts(user.role),
+      body: canManageAccounts(user.role)
+        ? "Create and manage Admin, Teacher, and Student logins."
+        : "Edit usernames and passwords for your assigned students.",
+      show: showAccounts,
     },
     {
       href: "/teacher/print/qr-cards",
