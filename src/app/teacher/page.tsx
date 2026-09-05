@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { deleteTransaction } from "@/app/actions/balance";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import {
+  canDeleteTransactions,
   canManageAccounts,
   canManageActivities,
   canManageStore,
@@ -13,6 +16,11 @@ import {
 
 export const dynamic = "force-dynamic";
 
+async function deleteTransactionAction(formData: FormData) {
+  "use server";
+  await deleteTransaction(formData);
+}
+
 export default async function TeacherHomePage() {
   const session = await auth();
   if (!session?.user || !isStaff(session.user.role)) {
@@ -20,6 +28,7 @@ export default async function TeacherHomePage() {
   }
 
   const admin = isAdmin(session.user.role);
+  const canRemoveTx = canDeleteTransactions(session.user.role);
 
   const [studentCount, totalBalance, recent] = await Promise.all([
     prisma.student.count({ where: { active: true } }),
@@ -153,16 +162,30 @@ export default async function TeacherHomePage() {
                   {tx.createdAt.toLocaleString()}
                 </p>
               </div>
-              <p
-                className={
-                  tx.amountCents >= 0
-                    ? "font-semibold text-emerald-700"
-                    : "font-semibold text-[var(--cardinal-red)]"
-                }
-              >
-                {tx.amountCents >= 0 ? "+" : ""}
-                {formatCash(tx.amountCents)}
-              </p>
+              <div className="flex items-center gap-3">
+                <p
+                  className={
+                    tx.amountCents >= 0
+                      ? "font-semibold text-emerald-700"
+                      : "font-semibold text-[var(--cardinal-red)]"
+                  }
+                >
+                  {tx.amountCents >= 0 ? "+" : ""}
+                  {formatCash(tx.amountCents)}
+                </p>
+                {canRemoveTx ? (
+                  <form>
+                    <input type="hidden" name="id" value={tx.id} />
+                    <ConfirmDeleteButton
+                      formAction={deleteTransactionAction}
+                      message="Are you sure you want to delete this?"
+                      className="rounded-md border border-[var(--cardinal-red)] px-2 py-1 text-xs font-medium text-[var(--cardinal-red)]"
+                    >
+                      Delete
+                    </ConfirmDeleteButton>
+                  </form>
+                ) : null}
+              </div>
             </li>
           ))}
           {recent.length === 0 ? (
