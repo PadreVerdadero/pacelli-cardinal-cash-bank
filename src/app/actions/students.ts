@@ -2,17 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
 import { dollarsToCents } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
-
-async function requireTeacher() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Teachers only");
-  }
-  return session.user;
-}
+import { requireStaff } from "@/lib/session";
 
 const studentSchema = z.object({
   firstName: z.string().trim().min(1),
@@ -23,7 +15,7 @@ const studentSchema = z.object({
 });
 
 export async function createStudent(formData: FormData) {
-  await requireTeacher();
+  await requireStaff();
 
   const parsed = studentSchema.safeParse({
     firstName: formData.get("firstName"),
@@ -66,7 +58,7 @@ export async function createStudent(formData: FormData) {
 }
 
 export async function importStudentsCsv(csvText: string) {
-  await requireTeacher();
+  await requireStaff();
 
   const lines = csvText
     .split(/\r?\n/)
@@ -138,7 +130,7 @@ export async function importStudentsCsv(csvText: string) {
 }
 
 export async function setStudentActive(studentId: string, active: boolean) {
-  await requireTeacher();
+  await requireStaff();
   await prisma.student.update({
     where: { id: studentId },
     data: { active },

@@ -6,11 +6,11 @@ Anyone can view student Cardinal Cash balances. Teachers sign in with individual
 
 ## Features
 
-- Public student balance directory and student pages
-- Unique QR code per student (scan opens that student’s page)
-- Teacher-only balance adjustments and store checkout
+- Role-based logins: Super Admin, Admin, Teacher, Student
+- Students only see their own balance (view-only)
+- Staff can view all students, scan QR codes, and record transactions
+- Admins manage store catalog items and activity reward values
 - Manual student entry + CSV import
-- Individual teacher accounts
 - Installable on phones (PWA / Add to Home Screen)
 
 ## Quick start
@@ -23,15 +23,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Seeded teacher logins
+### Seeded logins
 
-Password for all seed teachers: `pacelli123`
+| Role | Username | Password |
+|------|----------|----------|
+| Super Admin | `jesse` | `CardinalCash#Jesse1` |
+| Admin | `admin` | `pacelli123` |
+| Teacher | `smith` | `pacelli123` |
+| Student | `eanderson` | `student123` |
 
-- `admin@pacelli.edu`
-- `smith@pacelli.edu`
-- `johnson@pacelli.edu`
-
-Change these before real school use.
+Change passwords before real school use. Super Admin accounts can never be deleted.
 
 ## CSV import format
 

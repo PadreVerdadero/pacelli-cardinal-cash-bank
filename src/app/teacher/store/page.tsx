@@ -4,17 +4,24 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function StorePage() {
-  const students = await prisma.student.findMany({
-    where: { active: true },
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      balanceCents: true,
-      qrToken: true,
-    },
-  });
+  const [students, storeItems] = await Promise.all([
+    prisma.student.findMany({
+      where: { active: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        balanceCents: true,
+        qrToken: true,
+      },
+    }),
+    prisma.storeItem.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, priceCents: true },
+    }),
+  ]);
 
   return (
     <div className="rounded-2xl bg-[var(--paper)] p-6 shadow-[0_10px_40px_rgba(0,31,63,0.06)] sm:p-8">
@@ -25,7 +32,7 @@ export default async function StorePage() {
         Deduct Cardinal Cash when a student buys something. Purchases cannot go below zero.
       </p>
       <div className="mt-6">
-        <StoreCheckout students={students} />
+        <StoreCheckout students={students} storeItems={storeItems} />
       </div>
     </div>
   );

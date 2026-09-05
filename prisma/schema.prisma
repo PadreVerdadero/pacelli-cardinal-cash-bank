@@ -7,13 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Teacher {
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model User {
   id           String        @id @default(cuid())
   name         String
-  email        String        @unique
+  username     String        @unique
+  email        String?       @unique
   passwordHash String
+  role         Role
+  active       Boolean       @default(true)
+  studentId    String?       @unique
   createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  student      Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
   transactions Transaction[]
+  storeItems   StoreItem[]
+  activities   Activity[]
 }
 
 model Student {
@@ -27,21 +42,52 @@ model Student {
   active        Boolean       @default(true)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  user          User?
   transactions  Transaction[]
 
   @@index([lastName, firstName])
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   studentId   String
-  teacherId   String?
+  userId      String?
   amountCents Int
   type        String
   note        String?
-  createdAt   DateTime @default(now())
-  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher     Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  activityId  String?
+  storeItemId String?
+  createdAt   DateTime   @default(now())
+  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  activity    Activity?  @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  storeItem   StoreItem? @relation(fields: [storeItemId], references: [id], onDelete: SetNull)
 
   @@index([studentId, createdAt])
+}
+
+model StoreItem {
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  priceCents   Int
+  active       Boolean       @default(true)
+  createdById  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  createdBy    User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  transactions Transaction[]
+}
+
+model Activity {
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  valueCents   Int
+  active       Boolean       @default(true)
+  createdById  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  createdBy    User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  transactions Transaction[]
 }

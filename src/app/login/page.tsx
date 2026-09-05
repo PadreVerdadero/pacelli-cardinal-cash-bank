@@ -1,6 +1,8 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { homePathForRole } from "@/lib/session";
 
 type Props = {
   searchParams: Promise<{ callbackUrl?: string; error?: string }>;
@@ -9,18 +11,27 @@ type Props = {
 export default async function LoginPage({ searchParams }: Props) {
   const session = await auth();
   const params = await searchParams;
+
   if (session?.user) {
-    redirect(params.callbackUrl || "/teacher");
+    let studentToken: string | null = null;
+    if (session.user.role === "STUDENT" && session.user.studentId) {
+      const student = await prisma.student.findUnique({
+        where: { id: session.user.studentId },
+        select: { qrToken: true },
+      });
+      studentToken = student?.qrToken ?? null;
+    }
+    redirect(params.callbackUrl || homePathForRole(session.user.role, studentToken));
   }
 
-  const callbackUrl = params.callbackUrl || "/teacher";
+  const callbackUrl = params.callbackUrl || "/";
 
   async function loginAction(formData: FormData) {
     "use server";
-    const nextUrl = String(formData.get("callbackUrl") || "/teacher");
+    const nextUrl = String(formData.get("callbackUrl") || "/");
     try {
       await signIn("credentials", {
-        email: String(formData.get("email") ?? ""),
+        username: String(formData.get("username") ?? ""),
         password: String(formData.get("password") ?? ""),
         redirectTo: nextUrl,
       });
@@ -35,25 +46,26 @@ export default async function LoginPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-md rounded-2xl bg-[var(--paper)] p-8 shadow-[0_10px_40px_rgba(0,31,63,0.08)]">
       <p className="font-[family-name:var(--font-display)] text-xs tracking-[0.22em] text-[var(--cardinal-red)] uppercase">
-        Teachers only
+        Sign in
       </p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl text-[var(--navy)]">
-        Sign in
+        Cardinal Cash Bank
       </h1>
       <p className="mt-2 text-sm text-[var(--ink-muted)]">
-        Use your individual teacher account to adjust Cardinal Cash and run the store.
+        Use your username and password. Students only see their own balance.
       </p>
 
       <form action={loginAction} className="mt-6 space-y-4">
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-[var(--navy)]">Email</span>
+          <span className="mb-1 block font-medium text-[var(--navy)]">Username</span>
           <input
-            name="email"
-            type="email"
+            name="username"
+            type="text"
+            autoComplete="username"
             required
             className="w-full rounded-md border border-[var(--navy)]/20 px-3 py-2 outline-none ring-[var(--cardinal-red)] focus:ring-2"
-            placeholder="you@pacelli.edu"
+            placeholder="jesse"
           />
         </label>
         <label className="block text-sm">
@@ -61,13 +73,14 @@ export default async function LoginPage({ searchParams }: Props) {
           <input
             name="password"
             type="password"
+            autoComplete="current-password"
             required
             className="w-full rounded-md border border-[var(--navy)]/20 px-3 py-2 outline-none ring-[var(--cardinal-red)] focus:ring-2"
           />
         </label>
         {params.error ? (
           <p className="text-sm text-[var(--cardinal-red)]">
-            Sign in failed. Check your email and password.
+            Sign in failed. Check your username and password.
           </p>
         ) : null}
         <button

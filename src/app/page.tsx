@@ -1,12 +1,34 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { StudentSearch } from "@/components/StudentSearch";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canViewAllStudents } from "@/lib/roles";
+import { homePathForRole } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  if (session.user.role === "STUDENT") {
+    if (session.user.studentId) {
+      const student = await prisma.student.findUnique({
+        where: { id: session.user.studentId },
+        select: { qrToken: true },
+      });
+      redirect(homePathForRole("STUDENT", student?.qrToken));
+    }
+    redirect("/login");
+  }
+
+  if (!canViewAllStudents(session.user.role)) {
+    redirect("/login");
+  }
+
   const students = await prisma.student.findMany({
     where: { active: true },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
@@ -40,47 +62,34 @@ export default async function HomePage() {
             Cardinal Cash Bank
           </h1>
           <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg">
-            Anyone can view student balances. Teachers sign in to reward students,
-            scan QR codes, and check out at the school store.
+            Staff can view all student balances, scan QR codes, and record
+            transactions. Students only see their own account after signing in.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            {session?.user ? (
-              <>
-                <Link
-                  href="/teacher/scan"
-                  className="rounded-md bg-[var(--cardinal-red)] px-4 py-2.5 text-sm font-semibold transition hover:bg-[var(--cardinal-red-hot)]"
-                >
-                  Scan student QR
-                </Link>
-                <Link
-                  href="/teacher/store"
-                  className="rounded-md border border-white/40 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10"
-                >
-                  School store
-                </Link>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="rounded-md bg-[var(--cardinal-red)] px-4 py-2.5 text-sm font-semibold transition hover:bg-[var(--cardinal-red-hot)]"
-              >
-                Teacher sign in
-              </Link>
-            )}
+            <Link
+              href="/teacher/scan"
+              className="rounded-md bg-[var(--cardinal-red)] px-4 py-2.5 text-sm font-semibold transition hover:bg-[var(--cardinal-red-hot)]"
+            >
+              Scan student QR
+            </Link>
+            <Link
+              href="/teacher"
+              className="rounded-md border border-white/40 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10"
+            >
+              Staff desk
+            </Link>
           </div>
         </div>
       </section>
 
       <section className="mt-10 rounded-2xl bg-[var(--paper)] p-6 shadow-[0_10px_40px_rgba(0,31,63,0.06)] sm:p-8">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--navy)]">
-              Student balances
-            </h2>
-            <p className="text-sm text-[var(--ink-muted)]">
-              Public directory · {students.length} active students
-            </p>
-          </div>
+        <div className="mb-6">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--navy)]">
+            Student balances
+          </h2>
+          <p className="text-sm text-[var(--ink-muted)]">
+            Staff directory · {students.length} active students
+          </p>
         </div>
         <StudentSearch students={students} />
       </section>

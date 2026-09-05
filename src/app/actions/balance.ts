@@ -2,40 +2,65 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
 import { dollarsToCents } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
-
-async function requireTeacher() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Teachers only");
-  }
-  return session.user;
-}
+import { requireTransactor } from "@/lib/session";
 
 const adjustSchema = z.object({
   studentId: z.string().min(1),
   amount: z.string().min(1),
   note: z.string().optional(),
-  mode: z.enum(["add", "subtract", "store"]),
+  mode: z.enum(["add", "subtract", "store", "activity"]),
+  activityId: z.string().optional(),
+  storeItemId: z.string().optional(),
 });
 
 export async function adjustBalance(input: {
   studentId: string;
   amount: string;
   note?: string;
-  mode: "add" | "subtract" | "store";
+  mode: "add" | "subtract" | "store" | "activity";
+  activityId?: string;
+  storeItemId?: string;
 }) {
-  const teacher = await requireTeacher();
+  const actor = await requireTransactor();
   const parsed = adjustSchema.safeParse(input);
   if (!parsed.success) {
     return { error: "Invalid adjustment request." };
   }
 
   let amountCents: number;
+  let note = parsed.data.note?.trim() || null;
+  let activityId: string | null = null;
+  let storeItemId: string | null = null;
+  let type = parsed.data.mode.toUpperCase();
+
   try {
-    amountCents = dollarsToCents(parsed.data.amount);
+    if (parsed.data.mode === "activity" && parsed.data.activityId) {
+      const activity = await prisma.activity.findUnique({
+        where: { id: parsed.data.activityId },
+      });
+      if (!activity || !activity.active) {
+        return { error: "Activity not found." };
+      }
+      amountCents = activity.valueCents;
+      activityId = activity.id;
+      note = note || activity.name;
+      type = "ACTIVITY";
+    } else if (parsed.data.mode === "store" && parsed.data.storeItemId) {
+      const item = await prisma.storeItem.findUnique({
+        where: { id: parsed.data.storeItemId },
+      });
+      if (!item || !item.active) {
+        return { error: "Store item not found." };
+      }
+      amountCents = item.priceCents;
+      storeItemId = item.id;
+      note = note || item.name;
+      type = "STORE";
+    } else {
+      amountCents = dollarsToCents(parsed.data.amount);
+    }
   } catch {
     return { error: "Enter a valid dollar amount." };
   }
@@ -45,7 +70,9 @@ export async function adjustBalance(input: {
   }
 
   const signed =
-    parsed.data.mode === "add" ? amountCents : -amountCents;
+    parsed.data.mode === "add" || parsed.data.mode === "activity"
+      ? amountCents
+      : -amountCents;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -69,10 +96,12 @@ export async function adjustBalance(input: {
       await tx.transaction.create({
         data: {
           studentId: student.id,
-          teacherId: teacher.id,
+          userId: actor.id,
           amountCents: signed,
-          type: parsed.data.mode.toUpperCase(),
-          note: parsed.data.note?.trim() || null,
+          type,
+          note,
+          activityId,
+          storeItemId,
         },
       });
 

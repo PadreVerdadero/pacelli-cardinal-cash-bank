@@ -1,12 +1,23 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
+import {
+  canManageAccounts,
+  canManageActivities,
+  canManageStore,
+  isStaff,
+} from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherHomePage() {
   const session = await auth();
+  if (!session?.user || !isStaff(session.user.role)) {
+    redirect("/login");
+  }
+
   const [studentCount, totalBalance, recent] = await Promise.all([
     prisma.student.count({ where: { active: true } }),
     prisma.student.aggregate({
@@ -18,7 +29,7 @@ export default async function TeacherHomePage() {
       take: 8,
       include: {
         student: { select: { firstName: true, lastName: true, qrToken: true } },
-        teacher: { select: { name: true } },
+        user: { select: { name: true } },
       },
     }),
   ]);
@@ -28,31 +39,47 @@ export default async function TeacherHomePage() {
       href: "/teacher/scan",
       title: "Scan QR",
       body: "Open a student account with the phone camera.",
+      show: true,
     },
     {
       href: "/teacher/students",
       title: "Students",
       body: "Add students manually or import a CSV roster.",
+      show: true,
     },
     {
       href: "/teacher/store",
       title: "School store",
       body: "Ring up purchases and deduct Cardinal Cash.",
+      show: true,
     },
     {
-      href: "/teacher/teachers",
-      title: "Teachers",
-      body: "Create sign-in accounts for other staff.",
+      href: "/teacher/activities",
+      title: "Activities",
+      body: "Set reward values for specific activities.",
+      show: canManageActivities(session.user.role),
     },
-  ];
+    {
+      href: "/teacher/catalog",
+      title: "Store catalog",
+      body: "Add store items and prices.",
+      show: canManageStore(session.user.role),
+    },
+    {
+      href: "/teacher/accounts",
+      title: "Accounts",
+      body: "Create and manage Admin, Teacher, and Student logins.",
+      show: canManageAccounts(session.user.role),
+    },
+  ].filter((link) => link.show);
 
   return (
     <div>
       <p className="font-[family-name:var(--font-display)] text-xs tracking-[0.22em] text-[var(--cardinal-red)] uppercase">
-        Teacher desk
+        Staff desk
       </p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl text-[var(--navy)]">
-        Welcome, {session?.user?.name?.split(" ")[0] ?? "Teacher"}
+        Welcome, {session.user.name?.split(" ")[0] ?? "Staff"}
       </h1>
       <p className="mt-2 text-[var(--ink-muted)]">
         Manage Cardinal Cash for Pacelli Catholic Schools.
@@ -103,7 +130,7 @@ export default async function TeacherHomePage() {
                   {tx.student.lastName}, {tx.student.firstName}
                 </Link>
                 <p className="text-[var(--ink-muted)]">
-                  {tx.type} · {tx.teacher?.name ?? "Teacher"} ·{" "}
+                  {tx.type} · {tx.user?.name ?? "Staff"} ·{" "}
                   {tx.createdAt.toLocaleString()}
                 </p>
               </div>

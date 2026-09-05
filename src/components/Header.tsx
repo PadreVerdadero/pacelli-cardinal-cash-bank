@@ -1,8 +1,27 @@
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import {
+  canManageAccounts,
+  canManageActivities,
+  canManageStore,
+  canTransact,
+  canViewAllStudents,
+  roleLabel,
+} from "@/lib/roles";
 
 export async function Header() {
   const session = await auth();
+  const role = session?.user?.role;
+  let studentHref: string | null = null;
+
+  if (role === "STUDENT" && session?.user?.studentId) {
+    const student = await prisma.student.findUnique({
+      where: { id: session.user.studentId },
+      select: { qrToken: true },
+    });
+    if (student) studentHref = `/students/${student.qrToken}`;
+  }
 
   return (
     <header className="border-b border-white/15 bg-[var(--navy)] text-white">
@@ -17,30 +36,74 @@ export async function Header() {
         </Link>
 
         <nav className="flex flex-wrap items-center gap-2 text-sm sm:gap-3">
-          <Link
-            href="/"
-            className="rounded px-3 py-2 transition hover:bg-white/10"
-          >
-            Balances
-          </Link>
           {session?.user ? (
             <>
-              <Link
-                href="/teacher"
-                className="rounded px-3 py-2 transition hover:bg-white/10"
-              >
-                Teacher Desk
-              </Link>
-              <Link
-                href="/teacher/scan"
-                className="rounded px-3 py-2 transition hover:bg-white/10"
-              >
-                Scan QR
-              </Link>
+              {canViewAllStudents(role) ? (
+                <Link href="/" className="rounded px-3 py-2 transition hover:bg-white/10">
+                  Students
+                </Link>
+              ) : null}
+              {studentHref ? (
+                <Link
+                  href={studentHref}
+                  className="rounded px-3 py-2 transition hover:bg-white/10"
+                >
+                  My balance
+                </Link>
+              ) : null}
+              {canTransact(role) ? (
+                <>
+                  <Link
+                    href="/teacher"
+                    className="rounded px-3 py-2 transition hover:bg-white/10"
+                  >
+                    Staff desk
+                  </Link>
+                  <Link
+                    href="/teacher/scan"
+                    className="rounded px-3 py-2 transition hover:bg-white/10"
+                  >
+                    Scan QR
+                  </Link>
+                  <Link
+                    href="/teacher/store"
+                    className="rounded px-3 py-2 transition hover:bg-white/10"
+                  >
+                    Store
+                  </Link>
+                </>
+              ) : null}
+              {canManageActivities(role) ? (
+                <Link
+                  href="/teacher/activities"
+                  className="rounded px-3 py-2 transition hover:bg-white/10"
+                >
+                  Activities
+                </Link>
+              ) : null}
+              {canManageStore(role) ? (
+                <Link
+                  href="/teacher/catalog"
+                  className="rounded px-3 py-2 transition hover:bg-white/10"
+                >
+                  Catalog
+                </Link>
+              ) : null}
+              {canManageAccounts(role) ? (
+                <Link
+                  href="/teacher/accounts"
+                  className="rounded px-3 py-2 transition hover:bg-white/10"
+                >
+                  Accounts
+                </Link>
+              ) : null}
+              <span className="hidden text-xs text-white/70 sm:inline">
+                {session.user.name} · {role ? roleLabel(role) : ""}
+              </span>
               <form
                 action={async () => {
                   "use server";
-                  await signOut({ redirectTo: "/" });
+                  await signOut({ redirectTo: "/login" });
                 }}
               >
                 <button
@@ -56,7 +119,7 @@ export async function Header() {
               href="/login"
               className="rounded bg-[var(--cardinal-red)] px-3 py-2 font-medium transition hover:bg-[var(--cardinal-red-hot)]"
             >
-              Teacher Sign In
+              Sign in
             </Link>
           )}
         </nav>
