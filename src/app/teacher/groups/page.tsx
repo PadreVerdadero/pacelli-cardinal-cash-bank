@@ -83,7 +83,7 @@ export default async function GroupsPage() {
               <input
                 name="name"
                 required
-                placeholder="Mrs. Smith Homeroom"
+                placeholder="Group name"
                 className="w-full rounded-md border border-[var(--navy)]/20 px-3 py-2"
               />
             </label>

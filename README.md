@@ -25,14 +25,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Seeded logins
 
-| Role | Username | Password |
-|------|----------|----------|
-| Super Admin | `jesse` | `CardinalCash#Jesse1` |
-| Admin | `admin` | `pacelli123` |
-| Teacher | `smith` | `pacelli123` |
-| Student | `eanderson` | `student123` |
-
-Change passwords before real school use. Super Admin accounts can never be deleted.
+Run `npm run db:seed` to create starter accounts. Change all passwords before real school use. Super Admin accounts can never be deleted.
 
 ## CSV import format
 

@@ -141,7 +141,7 @@ export function BalanceAdjuster({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="w-full rounded-md border border-[var(--navy)]/20 bg-white px-3 py-2 outline-none ring-[var(--cardinal-red)] focus:ring-2"
-            placeholder="Good citizenship, pencils, etc."
+            placeholder="Note (optional)"
           />
         </label>
       </div>

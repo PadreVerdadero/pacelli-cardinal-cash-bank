@@ -50,7 +50,7 @@ export default async function CatalogPage() {
         <form action={createStoreItemAction} className="mt-6 grid gap-3 sm:grid-cols-2">
           <label className="block text-sm sm:col-span-2">
             <span className="mb-1 block font-medium text-[var(--navy)]">Item name</span>
-            <input name="name" required className="w-full rounded-md border border-[var(--navy)]/20 px-3 py-2" placeholder="Pencil pack" />
+            <input name="name" required className="w-full rounded-md border border-[var(--navy)]/20 px-3 py-2" />
           </label>
           <label className="block text-sm sm:col-span-2">
             <span className="mb-1 block font-medium text-[var(--navy)]">Description</span>

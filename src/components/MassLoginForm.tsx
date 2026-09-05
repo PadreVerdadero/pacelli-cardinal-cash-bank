@@ -17,9 +17,9 @@ export function MassLoginForm() {
       </h2>
       <p className="mt-1 text-sm text-[var(--ink-muted)]">
         Creates a login for every active student who does not already have one.
-        Usernames are built from name + student number (example:{" "}
-        <code>aanderson1001</code>). Share the default password with students, then
-        they can change it under Account.
+        Usernames are built automatically from the student&apos;s name and student
+        number. Share the default password with students, then they can change it
+        under Account.
       </p>
       <form
         className="mt-4 flex flex-wrap items-end gap-3"
