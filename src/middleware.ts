@@ -1,43 +1,33 @@
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { authConfig } from "@/lib/auth.config";
 
-const staffPrefixes = ["/teacher"];
+const { auth } = NextAuth(authConfig);
 
-export async function middleware(request: NextRequest) {
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-  });
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+  const role = req.auth?.user?.role;
 
-  const { pathname } = request.nextUrl;
-  const isStaffRoute = staffPrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-
-  if (!token) {
-    if (pathname === "/login") return NextResponse.next();
-    if (isStaffRoute || pathname.startsWith("/students/")) {
-      const login = new URL("/login", request.url);
-      login.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(login);
-    }
-    return NextResponse.next();
+  // Logged-in users should not stay on the login page.
+  if (pathname === "/login" && req.auth) {
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
-  const role = String(token.role ?? "");
-
-  if (isStaffRoute && role === "STUDENT") {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  if (pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Students cannot use staff tools.
+  if (pathname.startsWith("/teacher") && role === "STUDENT") {
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
-  matcher: ["/teacher/:path*", "/login", "/students/:path*"],
+  matcher: [
+    "/teacher",
+    "/teacher/:path*",
+    "/students/:path*",
+    "/account",
+    "/account/:path*",
+    "/login",
+  ],
 };
