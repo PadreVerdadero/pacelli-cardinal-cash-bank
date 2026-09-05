@@ -65,7 +65,6 @@ export default async function LoginPage({ searchParams }: Props) {
             autoComplete="username"
             required
             className="w-full rounded-md border border-[var(--navy)]/20 px-3 py-2 outline-none ring-[var(--cardinal-red)] focus:ring-2"
-            placeholder="jesse"
           />
         </label>
         <label className="block text-sm">
