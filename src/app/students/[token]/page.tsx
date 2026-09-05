@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { deleteTransaction } from "@/app/actions/balance";
 import { BalanceAdjuster } from "@/components/BalanceAdjuster";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { auth } from "@/lib/auth";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
-import { canTransact, canViewAllStudents } from "@/lib/roles";
+import { canDeleteTransactions, canTransact, canViewAllStudents } from "@/lib/roles";
 import { studentQrDataUrl } from "@/lib/qr";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +14,11 @@ export const dynamic = "force-dynamic";
 type Props = {
   params: Promise<{ token: string }>;
 };
+
+async function deleteTransactionAction(formData: FormData) {
+  "use server";
+  await deleteTransaction(formData);
+}
 
 export default async function StudentPage({ params }: Props) {
   const { token } = await params;
@@ -21,12 +28,14 @@ export default async function StudentPage({ params }: Props) {
     redirect(`/login?callbackUrl=/students/${token}`);
   }
 
+  const canRemoveTx = canDeleteTransactions(session.user.role);
+
   const student = await prisma.student.findUnique({
     where: { qrToken: token },
     include: {
       transactions: {
         orderBy: { createdAt: "desc" },
-        take: 12,
+        take: canRemoveTx ? 100 : 12,
         include: { user: { select: { name: true } } },
       },
     },
@@ -124,16 +133,30 @@ export default async function StudentPage({ params }: Props) {
                     {tx.user?.name ?? "Staff"} · {tx.createdAt.toLocaleString()}
                   </p>
                 </div>
-                <p
-                  className={
-                    tx.amountCents >= 0
-                      ? "font-semibold text-emerald-700"
-                      : "font-semibold text-[var(--cardinal-red)]"
-                  }
-                >
-                  {tx.amountCents >= 0 ? "+" : ""}
-                  {formatCash(tx.amountCents)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p
+                    className={
+                      tx.amountCents >= 0
+                        ? "font-semibold text-emerald-700"
+                        : "font-semibold text-[var(--cardinal-red)]"
+                    }
+                  >
+                    {tx.amountCents >= 0 ? "+" : ""}
+                    {formatCash(tx.amountCents)}
+                  </p>
+                  {canRemoveTx ? (
+                    <form>
+                      <input type="hidden" name="id" value={tx.id} />
+                      <ConfirmDeleteButton
+                        formAction={deleteTransactionAction}
+                        message="Are you sure you want to delete this?"
+                        className="rounded-md border border-[var(--cardinal-red)] px-2 py-1 text-xs font-medium text-[var(--cardinal-red)]"
+                      >
+                        Delete
+                      </ConfirmDeleteButton>
+                    </form>
+                  ) : null}
+                </div>
               </li>
             ))}
             {student.transactions.length === 0 ? (

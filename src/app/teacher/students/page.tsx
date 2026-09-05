@@ -4,6 +4,7 @@ import {
   deleteStudent,
   updateStudent,
 } from "@/app/actions/students";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { CsvImport } from "@/components/CsvImport";
 import { MassLoginForm } from "@/components/MassLoginForm";
 import { auth } from "@/lib/auth";
@@ -165,13 +166,13 @@ export default async function StudentsAdminPage() {
                   >
                     Save changes
                   </button>
-                  <button
+                  <ConfirmDeleteButton
                     formAction={deleteStudentAction}
-                    type="submit"
+                    message="Are you sure you want to delete this?"
                     className="rounded-md bg-[var(--cardinal-red)] px-3 py-2 text-sm font-medium text-white sm:w-fit"
                   >
                     Delete student
-                  </button>
+                  </ConfirmDeleteButton>
                 </form>
               ) : null}
             </li>

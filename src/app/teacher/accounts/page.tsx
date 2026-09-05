@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createAccount, deleteAccount, updateAccount } from "@/app/actions/accounts";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -226,13 +227,13 @@ export default async function AccountsPage() {
                       Save changes
                     </button>
                     {deletable ? (
-                      <button
+                      <ConfirmDeleteButton
                         formAction={deleteAccountAction}
-                        type="submit"
+                        message="Are you sure you want to delete this?"
                         className="rounded-md bg-[var(--cardinal-red)] px-3 py-2 text-sm font-medium text-white sm:w-fit"
                       >
                         Delete login
-                      </button>
+                      </ConfirmDeleteButton>
                     ) : null}
                   </form>
                 ) : null}

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { dollarsToCents } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
-import { requireTransactor } from "@/lib/session";
+import { canDeleteTransactions } from "@/lib/roles";
+import { requireSession, requireTransactor } from "@/lib/session";
 
 const adjustSchema = z.object({
   studentId: z.string().min(1),
@@ -116,6 +117,43 @@ export async function adjustBalance(input: {
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Could not update balance.",
+    };
+  }
+}
+
+export async function deleteTransaction(formData: FormData) {
+  const actor = await requireSession();
+  if (!canDeleteTransactions(actor.role)) {
+    return { error: "Only admins can delete transactions." };
+  }
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Missing transaction." };
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.transaction.findUnique({ where: { id } });
+      if (!existing) {
+        throw new Error("Transaction not found.");
+      }
+
+      // Reverse the original amount on the student balance.
+      const updated = await tx.student.update({
+        where: { id: existing.studentId },
+        data: { balanceCents: { decrement: existing.amountCents } },
+      });
+
+      await tx.transaction.delete({ where: { id } });
+      return updated;
+    });
+
+    revalidatePath("/");
+    revalidatePath(`/students/${result.qrToken}`);
+    revalidatePath("/teacher");
+    return { success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not delete transaction.",
     };
   }
 }
