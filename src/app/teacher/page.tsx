@@ -104,7 +104,7 @@ export default async function TeacherHomePage() {
       href: "/teacher/backup",
       title: "Balance backup",
       body: "Download a CSV snapshot of every student's current balance.",
-      show: isSuperAdmin(user.realRole),
+      show: isSuperAdmin(user.realRole) && isSuperAdmin(user.role),
     },
   ].filter((link) => link.show);
 

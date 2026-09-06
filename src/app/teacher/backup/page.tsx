@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function BackupPage() {
   const user = await getAuthUser();
-  if (!user || !isSuperAdmin(user.realRole)) {
+  if (!user || !isSuperAdmin(user.realRole) || !isSuperAdmin(user.role)) {
     redirect("/teacher");
   }
 
