@@ -45,17 +45,14 @@ export async function Header() {
           className="group flex items-center gap-3"
         >
           <Image
-            src="/cardinal-logo.png"
-            alt="Pacelli Cardinals"
-            width={56}
-            height={56}
+            src="/pacelli-logo.png"
+            alt="Pacelli Catholic Middle School"
+            width={220}
+            height={72}
             priority
-            className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14"
+            className="h-12 w-auto shrink-0 object-contain sm:h-14"
           />
           <span className="flex flex-col">
-            <span className="font-[family-name:var(--font-display)] text-xs tracking-[0.22em] text-[var(--cardinal-red-soft)] uppercase">
-              Pacelli Catholic Schools
-            </span>
             <span className="font-[family-name:var(--font-display)] text-xl tracking-wide sm:text-2xl">
               Cardinal Cash Bank
             </span>
