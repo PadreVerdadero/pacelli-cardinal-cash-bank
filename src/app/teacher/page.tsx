@@ -11,6 +11,7 @@ import {
   canManageStore,
   isAdmin,
   isStaff,
+  isSuperAdmin,
 } from "@/lib/roles";
 import { getAuthUser } from "@/lib/session";
 import { canAccessAccountsPage } from "@/lib/settings";
@@ -98,6 +99,12 @@ export default async function TeacherHomePage() {
       title: "Print QR cards",
       body: "PDF-ready page of every student with their QR code.",
       show: admin,
+    },
+    {
+      href: "/teacher/backup",
+      title: "Balance backup",
+      body: "Download a CSV snapshot of every student's current balance.",
+      show: isSuperAdmin(user.realRole),
     },
   ].filter((link) => link.show);
 

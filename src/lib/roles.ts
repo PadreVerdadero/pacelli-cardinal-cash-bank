@@ -43,6 +43,10 @@ export function isAdmin(role?: string | null): boolean {
   return role === "SUPER_ADMIN" || role === "ADMIN";
 }
 
+export function isSuperAdmin(role?: string | null): boolean {
+  return role === "SUPER_ADMIN";
+}
+
 export function canDeleteTransactions(role?: string | null): boolean {
   return isAdmin(role);
 }
