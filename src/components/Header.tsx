@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { RoleViewSwitcher } from "@/components/RoleViewSwitcher";
@@ -38,12 +39,26 @@ export async function Header() {
   return (
     <header className="border-b border-white/15 bg-[var(--navy)] text-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-        <Link href="/" prefetch={false} className="group flex flex-col">
-          <span className="font-[family-name:var(--font-display)] text-xs tracking-[0.22em] text-[var(--cardinal-red-soft)] uppercase">
-            Pacelli Catholic Schools
-          </span>
-          <span className="font-[family-name:var(--font-display)] text-xl tracking-wide sm:text-2xl">
-            Cardinal Cash Bank
+        <Link
+          href="/"
+          prefetch={false}
+          className="group flex items-center gap-3"
+        >
+          <Image
+            src="/cardinal-logo.png"
+            alt="Pacelli Cardinals"
+            width={56}
+            height={56}
+            priority
+            className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14"
+          />
+          <span className="flex flex-col">
+            <span className="font-[family-name:var(--font-display)] text-xs tracking-[0.22em] text-[var(--cardinal-red-soft)] uppercase">
+              Pacelli Catholic Schools
+            </span>
+            <span className="font-[family-name:var(--font-display)] text-xl tracking-wide sm:text-2xl">
+              Cardinal Cash Bank
+            </span>
           </span>
         </Link>
 

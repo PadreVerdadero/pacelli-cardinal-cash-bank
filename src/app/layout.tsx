@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     "Student Cardinal Cash balances for Pacelli Catholic Schools — view balances, scan QR codes, and manage the school store.",
   applicationName: "Cardinal Cash Bank",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icon-192.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     title: "Cardinal Cash",
