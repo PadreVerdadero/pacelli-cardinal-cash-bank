@@ -210,3 +210,183 @@ export async function deleteAccount(formData: FormData) {
   revalidatePath("/teacher/accounts");
   return { success: true };
 }
+
+function splitCsvLine(line: string) {
+  return line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
+}
+
+function parseStaffRole(raw: string): Role | null {
+  const normalized = raw.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  switch (normalized) {
+    case "super_admin":
+    case "superadmin":
+    case "super":
+      return "SUPER_ADMIN";
+    case "admin":
+    case "administrator":
+      return "ADMIN";
+    case "teacher":
+    case "staff":
+      return "TEACHER";
+    default:
+      return null;
+  }
+}
+
+/**
+ * CSV for Admin/Teacher (and Super Admin if allowed) accounts.
+ * Required columns: firstName,lastName,username,password,role
+ */
+export async function importStaffAccountsCsv(csvText: string) {
+  const actor = await requireAccountManager();
+  const allowed = creatableRoles(actor.role).filter(
+    (role) => role === "SUPER_ADMIN" || role === "ADMIN" || role === "TEACHER",
+  );
+
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return { error: "CSV needs a header row and at least one account row." };
+  }
+
+  const headers = splitCsvLine(lines[0]).map((h) => h.toLowerCase());
+  const firstIdx = headers.indexOf("firstname");
+  const lastIdx = headers.indexOf("lastname");
+  const usernameIdx = headers.indexOf("username");
+  const passwordIdx = headers.indexOf("password");
+  const roleIdx = headers.indexOf("role");
+
+  if (
+    firstIdx === -1 ||
+    lastIdx === -1 ||
+    usernameIdx === -1 ||
+    passwordIdx === -1 ||
+    roleIdx === -1
+  ) {
+    return {
+      error:
+        "CSV must include firstName, lastName, username, password, and role columns.",
+    };
+  }
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+  const problems: string[] = [];
+
+  for (const [offset, line] of lines.slice(1).entries()) {
+    const rowNumber = offset + 2;
+    const cols = splitCsvLine(line);
+    const firstName = (cols[firstIdx] ?? "").trim();
+    const lastName = (cols[lastIdx] ?? "").trim();
+    const username = (cols[usernameIdx] ?? "").toLowerCase().replace(/\s+/g, "");
+    const password = cols[passwordIdx] ?? "";
+    const role = parseStaffRole(cols[roleIdx] ?? "");
+
+    if (!firstName || !lastName) {
+      skipped += 1;
+      problems.push(`Row ${rowNumber}: firstName and lastName are required.`);
+      continue;
+    }
+    if (!username || username.length < 3) {
+      skipped += 1;
+      problems.push(`Row ${rowNumber}: username must be at least 3 characters.`);
+      continue;
+    }
+    if (!password || password.length < 6) {
+      skipped += 1;
+      problems.push(`Row ${rowNumber}: password must be at least 6 characters.`);
+      continue;
+    }
+    if (!role) {
+      skipped += 1;
+      problems.push(
+        `Row ${rowNumber}: role must be Admin, Teacher, or Super Admin.`,
+      );
+      continue;
+    }
+    if (role === "STUDENT") {
+      skipped += 1;
+      problems.push(
+        `Row ${rowNumber}: use the student logins upload for Student accounts.`,
+      );
+      continue;
+    }
+    if (!allowed.includes(role)) {
+      skipped += 1;
+      problems.push(`Row ${rowNumber}: you cannot create or assign ${role}.`);
+      continue;
+    }
+
+    const name = `${firstName} ${lastName}`.trim();
+    const passwordHash = await hash(password, 10);
+
+    try {
+      const existing = await prisma.user.findUnique({ where: { username } });
+      if (existing) {
+        if (!canEditUser(actor.role, existing.role)) {
+          skipped += 1;
+          problems.push(
+            `Row ${rowNumber}: you cannot edit existing account @${username}.`,
+          );
+          continue;
+        }
+        if (existing.role === "SUPER_ADMIN" && actor.role !== "SUPER_ADMIN") {
+          skipped += 1;
+          problems.push(
+            `Row ${rowNumber}: only a Super Admin can edit @${username}.`,
+          );
+          continue;
+        }
+        if (
+          existing.role === "SUPER_ADMIN" &&
+          role !== "SUPER_ADMIN"
+        ) {
+          skipped += 1;
+          problems.push(
+            `Row ${rowNumber}: Super Admin role for @${username} cannot be changed.`,
+          );
+          continue;
+        }
+
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            name,
+            passwordHash,
+            role: existing.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : role,
+            active: true,
+            studentId: null,
+          },
+        });
+        updated += 1;
+      } else {
+        await prisma.user.create({
+          data: {
+            name,
+            username,
+            passwordHash,
+            role,
+            active: true,
+          },
+        });
+        created += 1;
+      }
+    } catch {
+      skipped += 1;
+      problems.push(`Row ${rowNumber}: could not save account @${username}.`);
+    }
+  }
+
+  revalidatePath("/teacher/accounts");
+  return {
+    success: true,
+    created,
+    updated,
+    skipped,
+    problems: problems.slice(0, 8),
+  };
+}

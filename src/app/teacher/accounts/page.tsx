@@ -5,6 +5,7 @@ import {
   updateSchoolSettings,
 } from "@/app/actions/settings";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
+import { StaffAccountsCsvImport } from "@/components/StaffAccountsCsvImport";
 import { StudentChecklist } from "@/components/StudentChecklist";
 import { prisma } from "@/lib/prisma";
 import {
@@ -311,6 +312,7 @@ export default async function AccountsPage() {
             No assigned students without a login. Ask an admin to assign students to you.
           </p>
         )}
+        {fullAccess ? <StaffAccountsCsvImport /> : null}
       </section>
 
       <section className="rounded-2xl bg-[var(--paper)] p-6 shadow-[0_10px_40px_rgba(0,31,63,0.06)] sm:p-8">
