@@ -327,20 +327,10 @@ export async function importStaffAccountsCsv(csvText: string) {
           );
           continue;
         }
-        if (existing.role === "SUPER_ADMIN" && actor.role !== "SUPER_ADMIN") {
+        if (existing.role === "SUPER_ADMIN") {
           skipped += 1;
           problems.push(
-            `Row ${rowNumber}: only a Super Admin can edit @${username}.`,
-          );
-          continue;
-        }
-        if (
-          existing.role === "SUPER_ADMIN" &&
-          role !== "SUPER_ADMIN"
-        ) {
-          skipped += 1;
-          problems.push(
-            `Row ${rowNumber}: Super Admin role for @${username} cannot be changed.`,
+            `Row ${rowNumber}: Super Admin accounts cannot be changed by upload.`,
           );
           continue;
         }
@@ -350,7 +340,7 @@ export async function importStaffAccountsCsv(csvText: string) {
           data: {
             name,
             passwordHash,
-            role: existing.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : role,
+            role,
             active: true,
             studentId: null,
           },
