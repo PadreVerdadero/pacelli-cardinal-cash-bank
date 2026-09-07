@@ -240,7 +240,7 @@ function parseStaffRole(raw: string): Role | null {
 export async function importStaffAccountsCsv(csvText: string) {
   const actor = await requireAccountManager();
   const allowed = creatableRoles(actor.role).filter(
-    (role) => role === "SUPER_ADMIN" || role === "ADMIN" || role === "TEACHER",
+    (role) => role === "ADMIN" || role === "TEACHER",
   );
 
   const lines = csvText
@@ -301,17 +301,10 @@ export async function importStaffAccountsCsv(csvText: string) {
       problems.push(`Row ${rowNumber}: password must be at least 6 characters.`);
       continue;
     }
-    if (!role) {
+    if (!role || role === "SUPER_ADMIN" || role === "STUDENT") {
       skipped += 1;
       problems.push(
-        `Row ${rowNumber}: role must be Admin, Teacher, or Super Admin.`,
-      );
-      continue;
-    }
-    if (role === "STUDENT") {
-      skipped += 1;
-      problems.push(
-        `Row ${rowNumber}: use the student logins upload for Student accounts.`,
+        `Row ${rowNumber}: role must be Admin or Teacher (Super Admin cannot be created by upload).`,
       );
       continue;
     }

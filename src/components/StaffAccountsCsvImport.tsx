@@ -49,11 +49,10 @@ export function StaffAccountsCsvImport() {
       </h2>
       <p className="mt-1 text-sm text-[var(--ink-muted)]">
         Create or update staff logins in bulk. Required columns:{" "}
-        <code>firstName,lastName,username,password,role</code>. Role can be{" "}
-        <code>Admin</code> or <code>Teacher</code> (and{" "}
-        <code>Super Admin</code> only if your account can assign that level).
-        Matching is by username: new usernames are created, existing ones are
-        updated.
+        <code>firstName,lastName,username,password,role</code>. Role must be{" "}
+        <code>Admin</code> or <code>Teacher</code> (Super Admin cannot be
+        created by upload). Matching is by username: new usernames are created,
+        existing ones are updated.
       </p>
       <p className="mt-2 text-xs text-[var(--ink-muted)]">
         <a
