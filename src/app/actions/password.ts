@@ -1,7 +1,6 @@
 "use server";
 
 import { compare, hash } from "bcryptjs";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
@@ -44,6 +43,5 @@ export async function changePassword(formData: FormData) {
     data: { passwordHash: await hash(parsed.data.newPassword, 10) },
   });
 
-  revalidatePath("/account");
   return { success: true };
 }

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { deleteTransaction } from "@/app/actions/balance";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { formatCash } from "@/lib/money";
+import { formatDateTime } from "@/lib/datetime";
 import { prisma } from "@/lib/prisma";
 import {
   canDeleteTransactions,
@@ -170,7 +171,7 @@ export default async function TeacherHomePage() {
                 </Link>
                 <p className="text-[var(--ink-muted)]">
                   {tx.type} · {tx.user?.name ?? "Staff"} ·{" "}
-                  {tx.createdAt.toLocaleString()}
+                  {formatDateTime(tx.createdAt)}
                 </p>
               </div>
               <div className="flex items-center gap-3">

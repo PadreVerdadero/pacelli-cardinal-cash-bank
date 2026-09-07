@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { deleteTransaction } from "@/app/actions/balance";
 import { BalanceAdjuster } from "@/components/BalanceAdjuster";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
+import { formatDateTime } from "@/lib/datetime";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { canDeleteTransactions, canTransact, canViewAllStudents } from "@/lib/roles";
@@ -133,7 +134,7 @@ export default async function StudentPage({ params }: Props) {
                     {tx.type} {tx.note ? `· ${tx.note}` : ""}
                   </p>
                   <p className="text-[var(--ink-muted)]">
-                    {tx.user?.name ?? "Staff"} · {tx.createdAt.toLocaleString()}
+                    {tx.user?.name ?? "Staff"} · {formatDateTime(tx.createdAt)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

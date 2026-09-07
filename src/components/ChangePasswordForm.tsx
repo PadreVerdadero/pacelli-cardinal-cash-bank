@@ -15,15 +15,20 @@ export function ChangePasswordForm() {
         event.preventDefault();
         setError(null);
         setMessage(null);
-        const formData = new FormData(event.currentTarget);
+        const form = event.currentTarget;
+        const formData = new FormData(form);
         startTransition(async () => {
-          const result = await changePassword(formData);
-          if (result.error) {
-            setError(result.error);
-            return;
+          try {
+            const result = await changePassword(formData);
+            if (result.error) {
+              setError(result.error);
+              return;
+            }
+            setMessage("Password updated.");
+            form.reset();
+          } catch {
+            setError("Could not update password. Please try again.");
           }
-          setMessage("Password updated.");
-          event.currentTarget.reset();
         });
       }}
     >

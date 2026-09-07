@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { centralFileStamp, formatCentralStamp } from "@/lib/datetime";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { isSuperAdmin } from "@/lib/roles";
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
   const includeInactive = searchParams.get("includeInactive") === "1";
 
   const downloadedAt = new Date();
+  const stamp = formatCentralStamp(downloadedAt);
   const students = await prisma.student.findMany({
     where: includeInactive ? undefined : { active: true },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
@@ -32,7 +34,6 @@ export async function GET(request: Request) {
     },
   });
 
-  const stamp = downloadedAt.toISOString();
   const header = [
     "lastName",
     "firstName",
@@ -64,8 +65,7 @@ export async function GET(request: Request) {
   );
 
   const csv = `\uFEFF${[header.join(","), ...rows].join("\r\n")}\r\n`;
-  const fileStamp = stamp.replace(/[:.]/g, "-");
-  const filename = `cardinal-cash-balances-${fileStamp}.csv`;
+  const filename = `cardinal-cash-balances-${centralFileStamp(downloadedAt)}.csv`;
 
   return new NextResponse(csv, {
     status: 200,

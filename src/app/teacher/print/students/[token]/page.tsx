@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PrintButton } from "@/components/PrintButton";
+import { formatDateTime } from "@/lib/datetime";
 import { formatCash } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { canViewAllStudents } from "@/lib/roles";
@@ -53,7 +54,7 @@ export default async function StudentTransactionsPrintPage({ params }: Props) {
           {" · "}Current balance: {formatCash(student.balanceCents)}
         </p>
         <p className="mt-1 text-xs text-black/50">
-          Transaction report generated {new Date().toLocaleString()}
+          Transaction report generated {formatDateTime(new Date())}
         </p>
       </header>
 
@@ -71,7 +72,7 @@ export default async function StudentTransactionsPrintPage({ params }: Props) {
           {student.transactions.map((tx) => (
             <tr key={tx.id} className="border-b border-black/10">
               <td className="py-2 pr-2 whitespace-nowrap">
-                {tx.createdAt.toLocaleString()}
+                {formatDateTime(tx.createdAt)}
               </td>
               <td className="py-2 pr-2">{tx.type}</td>
               <td className="py-2 pr-2">{tx.note ?? "—"}</td>
