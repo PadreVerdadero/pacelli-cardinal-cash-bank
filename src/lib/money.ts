@@ -1,7 +1,11 @@
 export function formatCash(cents: number): string {
   const sign = cents < 0 ? "-" : "";
   const absolute = Math.abs(cents);
-  return `${sign}${(absolute / 100).toFixed(2)}`;
+  const formatted = (absolute / 100).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${sign}${formatted}`;
 }
 
 export function dollarsToCents(value: string | number): number {

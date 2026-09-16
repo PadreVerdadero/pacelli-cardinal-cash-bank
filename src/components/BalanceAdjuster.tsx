@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { adjustBalance } from "@/app/actions/balance";
+import { SearchableSelect } from "@/components/SearchableSelect";
 import { formatCash } from "@/lib/money";
 
 type ActivityOption = { id: string; name: string; valueCents: number };
@@ -29,6 +30,24 @@ export function BalanceAdjuster({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const activityOptions = useMemo(
+    () =>
+      activities.map((activity) => ({
+        id: activity.id,
+        label: `${activity.name} (+${formatCash(activity.valueCents)})`,
+      })),
+    [activities],
+  );
+
+  const itemOptions = useMemo(
+    () =>
+      storeItems.map((item) => ({
+        id: item.id,
+        label: `${item.name} (−${formatCash(item.priceCents)})`,
+      })),
+    [storeItems],
+  );
 
   function run(
     mode: "add" | "subtract" | "store" | "activity",
@@ -69,20 +88,16 @@ export function BalanceAdjuster({
 
       {activities.length > 0 ? (
         <div className="mt-4 flex flex-wrap items-end gap-2">
-          <label className="block min-w-[220px] flex-1 text-sm">
-            <span className="mb-1 block font-medium text-[var(--navy)]">Activity reward</span>
-            <select
+          <div className="min-w-[220px] flex-1">
+            <SearchableSelect
+              label="Activity reward"
+              options={activityOptions}
               value={activityId}
-              onChange={(e) => setActivityId(e.target.value)}
-              className="w-full rounded-md border border-[var(--navy)]/20 bg-white px-3 py-2"
-            >
-              {activities.map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name} (+{formatCash(activity.valueCents)})
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setActivityId}
+              searchPlaceholder="Type an activity name"
+              emptyText="No activities match"
+            />
+          </div>
           <button
             type="button"
             disabled={pending || !activityId}
@@ -96,20 +111,16 @@ export function BalanceAdjuster({
 
       {storeItems.length > 0 ? (
         <div className="mt-4 flex flex-wrap items-end gap-2">
-          <label className="block min-w-[220px] flex-1 text-sm">
-            <span className="mb-1 block font-medium text-[var(--navy)]">Store item</span>
-            <select
+          <div className="min-w-[220px] flex-1">
+            <SearchableSelect
+              label="Store item"
+              options={itemOptions}
               value={storeItemId}
-              onChange={(e) => setStoreItemId(e.target.value)}
-              className="w-full rounded-md border border-[var(--navy)]/20 bg-white px-3 py-2"
-            >
-              {storeItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} (−{formatCash(item.priceCents)})
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setStoreItemId}
+              searchPlaceholder="Type an item name"
+              emptyText="No items match"
+            />
+          </div>
           <button
             type="button"
             disabled={pending || !storeItemId}

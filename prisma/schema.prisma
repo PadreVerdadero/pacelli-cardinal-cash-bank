@@ -31,6 +31,7 @@ model User {
   activities         Activity[]
   groups             StudentGroup[]
   assignedStudents   TeacherStudent[] @relation("TeacherAssignments")
+  claimedGroups      TeacherGroup[]   @relation("TeacherClaimedGroups")
 }
 
 model Student {
@@ -79,6 +80,18 @@ model StudentGroup {
   updatedAt   DateTime             @updatedAt
   createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
   members     StudentGroupMember[]
+  claimedBy   TeacherGroup[]
+}
+
+/** Groups a teacher has pinned for themselves (login-specific My Groups). */
+model TeacherGroup {
+  teacherId String
+  groupId   String
+  teacher   User         @relation("TeacherClaimedGroups", fields: [teacherId], references: [id], onDelete: Cascade)
+  group     StudentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([teacherId, groupId])
+  @@index([groupId])
 }
 
 model StudentGroupMember {

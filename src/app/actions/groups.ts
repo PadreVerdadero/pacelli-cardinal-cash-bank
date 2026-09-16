@@ -26,7 +26,7 @@ export async function createGroup(formData: FormData) {
     return { error: "Select at least one student for the group." };
   }
 
-  await prisma.studentGroup.create({
+  const group = await prisma.studentGroup.create({
     data: {
       name: parsed.data.name,
       description: parsed.data.description || null,
@@ -35,6 +35,14 @@ export async function createGroup(formData: FormData) {
         create: parsed.data.studentIds.map((studentId) => ({ studentId })),
       },
     },
+  });
+
+  await prisma.teacherGroup.upsert({
+    where: {
+      teacherId_groupId: { teacherId: actor.id, groupId: group.id },
+    },
+    create: { teacherId: actor.id, groupId: group.id },
+    update: {},
   });
 
   revalidatePath("/teacher/groups");
@@ -79,6 +87,42 @@ export async function deleteGroup(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing group." };
   await prisma.studentGroup.delete({ where: { id } });
+  revalidatePath("/teacher/groups");
+  return { success: true };
+}
+
+export async function claimGroup(formData: FormData) {
+  const actor = await requireStaff();
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!groupId) return { error: "Missing group." };
+
+  const group = await prisma.studentGroup.findUnique({
+    where: { id: groupId },
+    select: { id: true },
+  });
+  if (!group) return { error: "Group not found." };
+
+  await prisma.teacherGroup.upsert({
+    where: {
+      teacherId_groupId: { teacherId: actor.id, groupId },
+    },
+    create: { teacherId: actor.id, groupId },
+    update: {},
+  });
+
+  revalidatePath("/teacher/groups");
+  return { success: true };
+}
+
+export async function unclaimGroup(formData: FormData) {
+  const actor = await requireStaff();
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!groupId) return { error: "Missing group." };
+
+  await prisma.teacherGroup.deleteMany({
+    where: { teacherId: actor.id, groupId },
+  });
+
   revalidatePath("/teacher/groups");
   return { success: true };
 }

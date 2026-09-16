@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { adjustBalance } from "@/app/actions/balance";
+import { SearchableSelect } from "@/components/SearchableSelect";
 import { formatCash } from "@/lib/money";
 
 type StudentOption = {
@@ -34,6 +35,24 @@ export function StoreCheckout({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const studentOptions = useMemo(
+    () =>
+      students.map((student) => ({
+        id: student.id,
+        label: `${student.lastName}, ${student.firstName} (${formatCash(student.balanceCents)})`,
+      })),
+    [students],
+  );
+
+  const itemOptions = useMemo(
+    () =>
+      storeItems.map((item) => ({
+        id: item.id,
+        label: `${item.name} (${formatCash(item.priceCents)})`,
+      })),
+    [storeItems],
+  );
 
   const selected = useMemo(
     () => students.find((s) => s.id === studentId),
@@ -67,20 +86,14 @@ export function StoreCheckout({
 
   return (
     <div className="max-w-xl space-y-4">
-      <label className="block text-sm">
-        <span className="mb-1 block font-medium text-[var(--navy)]">Student</span>
-        <select
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-          className="w-full rounded-md border border-[var(--navy)]/20 bg-white px-3 py-2"
-        >
-          {students.map((student) => (
-            <option key={student.id} value={student.id}>
-              {student.lastName}, {student.firstName} ({formatCash(student.balanceCents)})
-            </option>
-          ))}
-        </select>
-      </label>
+      <SearchableSelect
+        label="Student"
+        options={studentOptions}
+        value={studentId}
+        onChange={setStudentId}
+        searchPlaceholder="Type a student name"
+        emptyText="No students match"
+      />
 
       {selected ? (
         <p className="text-sm text-[var(--ink-muted)]">
@@ -93,20 +106,14 @@ export function StoreCheckout({
 
       {storeItems.length > 0 ? (
         <div className="space-y-2 rounded-lg border border-[var(--navy)]/10 p-4">
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[var(--navy)]">Catalog item</span>
-            <select
-              value={storeItemId}
-              onChange={(e) => setStoreItemId(e.target.value)}
-              className="w-full rounded-md border border-[var(--navy)]/20 bg-white px-3 py-2"
-            >
-              {storeItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} ({formatCash(item.priceCents)})
-                </option>
-              ))}
-            </select>
-          </label>
+          <SearchableSelect
+            label="Catalog item"
+            options={itemOptions}
+            value={storeItemId}
+            onChange={setStoreItemId}
+            searchPlaceholder="Type an item name"
+            emptyText="No items match"
+          />
           <button
             type="button"
             disabled={pending || !storeItemId}
